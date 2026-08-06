@@ -1,0 +1,22 @@
+{
+    "id": 81,
+    "content": "弹弓",
+    "tags": [
+        {
+            "namespace": "game",
+            "value": "genshin"
+        },
+        {
+            "namespace": "rarity",
+            "value": "3"
+        },
+        {
+            "namespace": "type",
+            "value": "weapon"
+        },
+        {
+            "namespace": "profession",
+            "value": "弓"
+        }
+    ]
+}

@@ -1,0 +1,181 @@
+<script setup lang="ts">
+import { ref } from 'vue';
+import { BannerSummary } from '../types';
+
+defineEmits<{
+  (e: "select-banner", bannerId: number): void
+}>();
+
+defineProps<{
+  banners: BannerSummary[],
+}>();
+
+
+// 背景光晕实现
+const pageRef = ref<HTMLElement | null>(null);
+const glowRef = ref<HTMLElement | null>(null);
+
+
+const handleMouseMove = (e: MouseEvent) => {
+  if (!pageRef.value || !glowRef.value) return;
+  const rect = pageRef.value.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = (e.clientY - rect.top) / rect.height;
+  const offsetX = (x - 0.5) * 100;
+  const offsetY = (y - 0.5) * 100;
+  glowRef.value.style.transform = `translate(${offsetX}%, ${offsetY}%)`;
+}
+
+const resetGlow = () => {
+  if (glowRef.value) {
+    glowRef.value.style.transform = `translate(0%, 0%)`; 
+  }
+};
+</script>
+
+<template>
+  <div class="page home-page" @mousemove="handleMouseMove" @mouseleave="resetGlow" ref="pageRef">
+    <div class="bg-glow" ref="glowRef"></div>
+    <span class="title">主页</span>
+    <span class="subtitle">选择卡池开始抽卡!</span>
+    <div class="banner-grid" v-if="banners.length">
+      <div
+        v-for="banner in banners"
+        :key="banner.id"
+        class="banner-card"
+        @click="$emit('select-banner', banner.id)"
+      >
+        <div class="banner-thumbnail">
+          <div class="thumbnail-placeholder"></div>
+        </div>
+        <div class="banner-name">{{ banner.name }}</div>
+        <div class="banner-tags">
+          <span
+            v-for="tag in banner.tags"
+            :key="tag.namespace"
+            class="tag"
+          >
+            {{ tag.value }}
+          </span>
+        </div>
+        <div class="banner-id">ID: {{ banner.id }}</div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.home-page {
+  position: relative;
+  padding: 40px 16px;
+  min-height: 100vh;
+}
+
+.bg-glow {
+  position: fixed;
+  top: 0%;
+  left: 0%;
+  width: 120vmax;
+  height: 120vmax;
+  background: radial-gradient(
+    circle at center,
+    rgba(77, 109, 255, 0.35) 0%,
+    rgba(120, 80, 240, 0.15) 40%,
+    transparent 70%
+  );
+  filter: blur(90px);
+  transform: translate(0%, 0%);
+  transition: transform 0.6s ease-out;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  user-select: none;
+}
+
+.subtitle {
+  color: #8a99b4;
+  font-size: 1.2rem;
+  padding: 10px;
+  user-select: none;
+}
+
+.banner-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.banner-card {
+  background: rgba(26, 33, 43, 0.25);
+  backdrop-filter: blur(10px) saturate(180%);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
+  border-radius: 16px;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  border: 1px solid #2a3340;
+  border-bottom: 5px solid #2a3340;
+  transition: border-color 0.2s, transform 0.2s;
+  cursor: pointer;
+  padding-bottom: 30px;
+  position: relative;
+}
+.banner-card:hover {
+  border-color: #3395ff;
+  transform: translateY(-5px);
+}
+.banner-card:active {
+  transform: translateY(5px);
+}
+.banner-thumbnail {
+  aspect-ratio: 16/9;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.thumbnail-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #2a3340, #1a212b);
+}
+.banner-name {
+  font-weight: 500;
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+.banner-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.tag {
+  background: #2a3340;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 1.2rem;
+  color: #b0c0d0;
+}
+.banner-id {
+  position: absolute;
+  font-size: 1rem;
+  color: #6a7a90;
+  bottom: 8px;
+}
+
+.back-body {
+  flex: 1;
+  background: radial-gradient(ellipse at 30% 70%, rgba(79,110,247,0.08), transparent 70%);
+}
+
+.empty-state {
+  color: #6a7a90;
+  text-align: center;
+  padding: 60px 0;
+}
+</style>

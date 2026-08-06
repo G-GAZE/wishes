@@ -1,0 +1,22 @@
+{
+    "id": 85,
+    "content": "讨龙英杰谭",
+    "tags": [
+        {
+            "namespace": "game",
+            "value": "genshin"
+        },
+        {
+            "namespace": "rarity",
+            "value": "3"
+        },
+        {
+            "namespace": "type",
+            "value": "weapon"
+        },
+        {
+            "namespace": "profession",
+            "value": "法器"
+        }
+    ]
+}

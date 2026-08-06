@@ -1,0 +1,22 @@
+{
+    "id": 39,
+    "content": "舞！舞！舞！",
+    "tags": [
+        {
+            "namespace": "game",
+            "value": "starrail"
+        },
+        {
+            "namespace": "rarity",
+            "value": "4"
+        },
+        {
+            "namespace": "type",
+            "value": "light_cone"
+        },
+        {
+            "namespace": "fate",
+            "value": "同谐"
+        }
+    ]
+}

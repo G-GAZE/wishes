@@ -1,0 +1,22 @@
+{
+    "id": 79,
+    "content": "以理服人",
+    "tags": [
+        {
+            "namespace": "game",
+            "value": "genshin"
+        },
+        {
+            "namespace": "rarity",
+            "value": "3"
+        },
+        {
+            "namespace": "type",
+            "value": "weapon"
+        },
+        {
+            "namespace": "profession",
+            "value": "双手剑"
+        }
+    ]
+}

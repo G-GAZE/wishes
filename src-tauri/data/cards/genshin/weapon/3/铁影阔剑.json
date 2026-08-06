@@ -1,0 +1,22 @@
+{
+    "id": 86,
+    "content": "铁影阔剑",
+    "tags": [
+        {
+            "namespace": "game",
+            "value": "genshin"
+        },
+        {
+            "namespace": "rarity",
+            "value": "3"
+        },
+        {
+            "namespace": "type",
+            "value": "weapon"
+        },
+        {
+            "namespace": "profession",
+            "value": "双手剑"
+        }
+    ]
+}

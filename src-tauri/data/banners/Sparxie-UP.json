@@ -1,0 +1,26 @@
+{
+    "id": 2,
+    "name": "狂欢企划",
+    "tags": [
+        {
+            "namespace": "game",
+            "value": "崩坏星穹铁道"
+        },
+        {
+            "namespace": "event",
+            "value": "UP"
+        }
+    ],
+    "deck_id": 2,
+    "logic_instance": {
+        "logic_id": 2,
+        "state": {
+            "total_counter": 0,
+            "counter_5": 0,
+            "counter_4": 0,
+            "is_pity_5": false,
+            "is_pity_4": false,
+            "next_char_4": false
+        }
+    }
+}
