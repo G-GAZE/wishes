@@ -1,5 +1,28 @@
 <script setup lang="ts">
+import { invoke } from '@tauri-apps/api/core';
+import { onMounted, ref } from 'vue';
+
 const version = __APP_VERSION__;
+
+const loading = ref(false);
+const data_dir = ref<string | null>(null);
+
+
+onMounted(() => {
+  const loadDataDir = async () => {
+    loading.value = true;
+    try {
+      data_dir.value = await invoke("get_data_dir_path");
+    } catch (e) {
+      console.error("获取数据目录路径失败: ", e);
+      data_dir.value = null;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  loadDataDir();
+})
 </script>
 
 
@@ -10,7 +33,7 @@ const version = __APP_VERSION__;
     <div class="settings-list">
       <div class="setting-item">
         <span class="setting-label">数据目录</span>
-        <span class="setting-value">~/data/</span>
+        <span class="setting-value">{{ data_dir ? data_dir : "无法加载" }}</span>
       </div>
       <div class="setting-item">
         <span class="setting-label">深色模式</span>

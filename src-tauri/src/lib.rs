@@ -46,12 +46,19 @@ fn get_catalog_stats(state: State<AppState>) -> Result<CatalogStats, String> {
     Ok(state.get_catalog_stats())
 }
 
+#[tauri::command]
+fn get_data_dir_path(state: State<AppState>) -> Result<String, String> {
+    Ok(state.data_dir.to_string_lossy().into_owned())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
             let handle = app.handle();
-            let data_dir = get_or_create_data_dir(&handle)?;
+            let data_dir = get_or_create_data_dir(&handle)
+                .with_context(|| "获取数据目录失败")?;
+            
             let app_state = AppState::load(&data_dir).with_context(|| "Wishes 启动失败")?;
             app.manage(app_state);
             Ok(())
@@ -62,6 +69,7 @@ pub fn run() {
             get_banners,
             get_banner_info,
             get_catalog_stats,
+            get_data_dir_path,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Wishes");

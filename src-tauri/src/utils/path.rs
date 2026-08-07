@@ -22,9 +22,9 @@ pub fn get_or_create_data_dir(handle: &AppHandle) -> Result<PathBuf> {
     // 生成环境下使用用户数据目录数据
     let user_data_dir = handle
         .path()
-        .data_dir()
+        .app_data_dir()
         .with_context(|| "无法获取用户数据目录")?;
-    let target = user_data_dir.join("wishes").join("data");
+    let target = user_data_dir.join("data");
 
     if !target.exists() {
         std::fs::create_dir_all(&target)?;

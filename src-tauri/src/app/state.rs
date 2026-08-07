@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::{path::{Path, PathBuf}, sync::Arc};
 
 use anyhow::{Ok, Result};
 
@@ -14,6 +14,8 @@ pub struct AppState {
 
     pub logic_engine: Arc<LogicEngine>,
     pub banner_service: Arc<BannerService>,
+
+    pub data_dir: PathBuf,
 }
 
 impl AppState {
@@ -74,6 +76,7 @@ impl AppState {
             banner_registry,
             logic_engine,
             banner_service,
+            data_dir: data_dir.to_path_buf(),
         })
     }
 
