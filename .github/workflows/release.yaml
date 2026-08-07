@@ -25,9 +25,9 @@ jobs:
       - name: Verify version consistency
         run: |
           TAG_VERSION="${{ steps.version.outputs.version }}"
-          PACKAGE_VERSION=$(node -p "require('package.json')")
+          PACKAGE_VERSION=$(jq -r '.version' package.json)
           CARGO_VERSION=$(grep '^version =' src-tauri/Cargo.toml | head - 1 | sed 's/version = "\(.*\)"/\1/')
-          TAURI_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          TAURI_VERSION=$(jq -r '.version' src-tauri/tauri.conf.json)
 
           echo "TAG version: $TAG_VERSION"
           echo "package.json: $PACKAGE_VERSION"
