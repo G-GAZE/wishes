@@ -28,7 +28,7 @@ jobs:
           PACKAGE_VERSION=$(jq -r '.version' package.json)
           CARGO_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' src-tauri/Cargo.toml | head -1)
 
-          TAURI_VERSION=$(jq -r '.version' src-tauri/tauri.conf.json)
+          TAURI_RAW_VERSION=$(jq -r '.version' src-tauri/tauri.conf.json)
           if [[ "$TAURI_RAW_VERSION" == "../package.json" ]]; then
             TAURI_VERSION="$PACKAGE_VERSION"   # use package.json version
           else
