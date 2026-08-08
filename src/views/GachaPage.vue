@@ -66,7 +66,6 @@ defineEmits<{
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: calc(100vh - 13rem); /* 顶栏和底栏总高度为 13rem */
   padding: 20px 16px 16px;
   gap: 20px;
   background-image:

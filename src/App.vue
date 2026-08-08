@@ -251,9 +251,7 @@ header.expanded {
 
 .page-container {
   flex: 1;
-  overflow-y: auto;
-  padding-bottom: 68px;
-  scroll-behavior: smooth;
+  padding-bottom: 5rem;   /* 底栏高度为 5rem */
   overflow: hidden;
 }
 
@@ -273,7 +271,7 @@ header.expanded {
 
 <style>
 html {
-  font-size: 62.5%;
+  font-size: 62.5%;   /* 使 1rem == 10px */
   overflow: hidden;
 }
 
@@ -285,7 +283,8 @@ html {
 
 #app {
   background: #121316;
-  min-height: 100vh;
+  height: 100vh;          /* 填充视图 */
+  overflow: hidden;       /* 隐藏滚动条 */
   display: flex;
   flex-direction: column;
 }
@@ -296,7 +295,7 @@ body {
   color: #e4e8ef;
   margin: 0;
   padding: 0;
-  min-height: 100vh;
+  min-height: 100%;
   overflow: hidden;
 }
 </style>

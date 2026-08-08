@@ -63,7 +63,7 @@ onMounted(() => {
 <style scoped>
 .settings-page {
   padding: 40px 16px;
-  min-height: 100vh;
+  height: 100%;
   background-image: radial-gradient(
     ellipse at 10% 90%,
     rgba(77, 109, 255, 0.1) 0%,

@@ -34,10 +34,14 @@ const resetGlow = () => {
 </script>
 
 <template>
-  <div class="page home-page" @mousemove="handleMouseMove" @mouseleave="resetGlow" ref="pageRef">
+  <div class="home-page" @mousemove="handleMouseMove" @mouseleave="resetGlow" ref="pageRef">
     <div class="bg-glow" ref="glowRef"></div>
-    <span class="title">主页</span>
+
+    <div class="header-area">
+      <span class="title">主页</span>
     <span class="subtitle">选择卡池开始抽卡!</span>
+    </div>
+    
     <div class="banner-grid" v-if="banners.length">
       <div
         v-for="banner in banners"
@@ -66,9 +70,12 @@ const resetGlow = () => {
 
 <style scoped>
 .home-page {
+  display: flex;
+  flex-direction: column;
   position: relative;
-  padding: 40px 16px;
-  min-height: 100vh;
+  height: 100%;
+  padding: 40px 16px 0;
+  overflow: hidden;
 }
 
 .bg-glow {
@@ -90,6 +97,12 @@ const resetGlow = () => {
   z-index: 0;
 }
 
+.header-area {
+  flex-shrink: 0;
+  padding-bottom: 12px;
+  z-index: 1;
+}
+
 .title {
   font-size: 2.5rem;
   font-weight: 600;
@@ -105,10 +118,19 @@ const resetGlow = () => {
 }
 
 .banner-grid {
-  margin-top: 10px;
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
+  align-content: start;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding-top: 5px;       /* 为卡片上浮动画预留的空间 */
+  padding-bottom: 16px;   /* 底边距 */
+}
+.banner-grid::-webkit-scrollbar {
+  display: none;
 }
 
 .banner-card {
@@ -124,6 +146,7 @@ const resetGlow = () => {
   cursor: pointer;
   padding-bottom: 30px;
   position: relative;
+  height: fit-content;
 }
 .banner-card:hover {
   border-color: #3395ff;

@@ -55,7 +55,6 @@ const version = __APP_VERSION__;
   z-index: 100;
   user-select: none;
   gap: 10px;
-  /* position: relative; */
 }
 
 .nav-item {
