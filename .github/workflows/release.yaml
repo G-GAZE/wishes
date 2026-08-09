@@ -83,7 +83,6 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Wishes · 众愿 v${{ needs.check-version.outputs.version }}"
-          generateReleaseNotes: true
           releaseDraft: true
           prerelease: false
           releaseBody: ${{ join(github.event.commits.*.message, '\n') }}
