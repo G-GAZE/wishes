@@ -15,6 +15,8 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0      # 获取完整历史
 
       - name: Extract version from tag
         id: version
@@ -76,6 +78,21 @@ jobs:
           workspaces: "./src-tauri -> target"
           cache-on-failure: true
       
+      - name: Generate release body
+        id: release_body
+        shell: bash
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s (%h)" HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD)
+          fi
+          BODY="## What's Changed\n\n$COMMITS"
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
       - name: Build and upload Tauri app (Windows)
         uses: tauri-apps/tauri-action@v1
         env:
@@ -85,5 +102,5 @@ jobs:
           releaseName: "Wishes · 众愿 v${{ needs.check-version.outputs.version }}"
           releaseDraft: true
           prerelease: false
-          releaseBody: ${{ join(github.event.commits.*.message, '\n') }}
+          releaseBody: ${{ steps.release_body.outputs.body }}
           args: ""
