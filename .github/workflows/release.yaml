@@ -24,6 +24,10 @@ jobs:
       
       - name: Verify version consistency
         run: |
+          if [[ "${{ github.ref_type }}" != "tag" ]]; then    # 分支测试时跳过版本检查
+            echo "分支测试, 跳过版本一致性检查"
+            exit 0
+          fi
           TAG_VERSION="${{ steps.version.outputs.version }}"
           PACKAGE_VERSION=$(jq -r '.version' package.json)
           CARGO_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' src-tauri/Cargo.toml | head -1)
@@ -73,12 +77,12 @@ jobs:
           cache-on-failure: true
       
       - name: Build and upload Tauri app (Windows)
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "Tauri App v${{ needs.check-version.outputs.version }}"
+          releaseName: "Wishes · 众愿 v${{ needs.check-version.outputs.version }}"
           releaseDraft: true
           prerelease: false
           args: ""
