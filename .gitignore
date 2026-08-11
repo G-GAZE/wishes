@@ -29,3 +29,6 @@ src-tauri/gen/
 
 scripts/
 .VSCodeCounter/
+
+*.db
+*.txt
