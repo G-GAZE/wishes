@@ -1,24 +1,64 @@
+//! # 应用全局状态
+//! 
+//! 集成所有注册器、核心服务，并提供统一的初始化和操作入口.
+//! 在应用启动时从文件系统加载所有数据, 并建立服务间的依赖关系.
+
+
 use std::{path::{Path, PathBuf}, sync::Arc};
-
 use anyhow::{Ok, Result};
-
-use crate::{app::{banner_service::BannerService, logic_engine::LogicEngine}, domain::{ids::BannerId, wish_result::WishResult}, infrastructure::{registry::{BannerRegistry, CardRegistry, DeckRegistry, LogicRegistry}, repository::state_repo::StateRepository}, interface::catalog_stats::CatalogStats};
+use crate::{
+    app::{
+        banner_service::BannerService,
+        logic_engine::LogicEngine
+    },
+    domain::{
+        ids::BannerId,
+        wish_result::WishResult
+    },
+    infrastructure::{
+        registry::{
+            BannerRegistry,
+            CardRegistry,
+            DeckRegistry,
+            LogicRegistry
+        },
+        repository::state_repo::StateRepository
+    },
+    interface::catalog_stats::CatalogStats
+};
 use super::loader::Loader;
 
-
+/// 应用状态, 持有所有注册器和服务实例.
+/// 
+/// 作为顶层容器, 提供对外的接口方法.
 pub struct AppState {
+    /// 卡片注册器引用
     pub card_registry: Arc<CardRegistry>,
+    /// 卡组注册器引用.
     pub deck_registry: Arc<DeckRegistry>,
+    /// 逻辑注册器引用.
     pub logic_registry: Arc<LogicRegistry>,
+    /// 卡池注册器引用.
     pub banner_registry: Arc<BannerRegistry>,
-
+    /// 逻辑引擎引用.
     pub logic_engine: Arc<LogicEngine>,
+    /// 卡池服务引用.
     pub banner_service: Arc<BannerService>,
-
+    /// 存储当前使用的数据目录路径.
     pub data_dir: PathBuf,
 }
 
 impl AppState {
+    /// 从指定数据目录加载所有配置和状态, 构建完整的 `AppState`.
+    /// 
+    /// # 流程
+    /// 1. 使用 `Loader` 加载卡片、卡组、逻辑定义和卡池到注册器。
+    /// 2. 将注册器包装为 `Arc`.
+    /// 3. 创建逻辑引擎和卡池服务.
+    /// 4. 打开状态数据库并加载所有卡池的持久化状态.
+    /// 
+    /// # 错误
+    /// 任何加载或初始化步骤失败都将返回错误.
     pub fn load(data_dir: &Path) -> Result<Self> {
         let loader = Loader::new();
 
@@ -80,10 +120,12 @@ impl AppState {
         })
     }
 
+    /// 执行一次抽卡, 委托给 `banner_service`.
     pub fn wish(&self, banner_id: BannerId) -> Result<WishResult> {
         self.banner_service.wish(banner_id)
     }
 
+    /// 获取图鉴统计信息.
     pub fn get_catalog_stats(&self) -> CatalogStats {
         CatalogStats {
             cards: self.card_registry.count(),

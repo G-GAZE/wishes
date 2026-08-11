@@ -1,15 +1,14 @@
-use std::collections::HashSet;
+//! # 硬编码逻辑定义
 
+use std::collections::HashSet;
 use rand::RngExt;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
 use rand::rngs::ChaCha12Rng;
 use serde::{Serialize, Deserialize};
 use serde_json::{Value as JsonValue};
-
 use super::super::executor::HardcodedExecutor;
 use crate::domain::{tag::{Tag, EventTag}, logic::result::LogicResult};
-
 
 
 // 逻辑常量
@@ -22,9 +21,9 @@ const TYPE_WEAPON: &str = "weapon";
 const TYPE_LIGHT_CONE: &str = "light_cone";
 
 
-
 // ------------------------------ 原神角色 UP 卡池 ------------------------------
 
+/// 原神角色 UP 卡池逻辑状态
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 struct GenshinCharacterUpState {
     counter_5: u16,
@@ -48,6 +47,7 @@ impl Default for GenshinCharacterUpState {
     }
 }
 
+/// 原神角色 UP 卡池抽卡逻辑 (含捕获明光).
 pub struct GenshinCharacterUpLogic;
 
 impl GenshinCharacterUpLogic {
@@ -62,6 +62,7 @@ impl GenshinCharacterUpLogic {
     const UP_RATE           : f64 = 0.5;
     const CHAR_RATE_4       : f64 = 0.5;
 
+    /// 具体实现
     fn draw(state: GenshinCharacterUpState, rng: &mut ChaCha12Rng) -> (GenshinCharacterUpState, LogicResult) {
         let mut new_state = state;
         new_state.counter_5 += 1;
@@ -199,6 +200,7 @@ impl HardcodedExecutor for GenshinCharacterUpLogic {
 
 // ------------------------------ 崩坏星穹铁道角色 UP 卡池 ------------------------------
 
+/// 崩坏星穹铁道角色 UP 卡池逻辑状态.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 struct StarrailCharacterUpState {
     counter_5: u16,
@@ -220,6 +222,7 @@ impl Default for StarrailCharacterUpState {
     }
 }
 
+/// 崩坏星穹铁道角色 UP 卡池抽卡逻辑.
 pub struct StarrailCharacterUpLogic;
 
 impl StarrailCharacterUpLogic {

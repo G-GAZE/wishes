@@ -1,19 +1,44 @@
-use std::{fs, path::Path};
+//! # 数据加载器
+//! 
+//! 负责从文件系统加载各类数据 (卡片、卡组、逻辑、卡池) 并构建注册器.
+//! 加载过程中会进行引用完整性和唯一性检验, 并对卡池进行逻辑到卡组的标签覆盖性检验.
 
+use std::{fs, path::Path};
 use anyhow::{Context, Result};
 use walkdir::WalkDir;
+use crate::{
+    domain::{
+        banner::TaggedBanner,
+        card::TaggedCard,
+        deck::TaggedDeck,
+        logic::definition::{
+            LogicVariant,
+            TaggedLogicDefinition
+        }
+    },
+    infrastructure::registry::{
+        BannerRegistry,
+        CardRegistry,
+        DeckRegistry,
+        LogicRegistry
+    }
+};
 
-use crate::{domain::{banner::TaggedBanner, card::TaggedCard, deck::TaggedDeck, logic::definition::{LogicVariant, TaggedLogicDefinition}}, infrastructure::registry::{BannerRegistry, CardRegistry, DeckRegistry, LogicRegistry}};
-
-
-
+/// 加载器.
+/// 所有方法均为静态风格.
 pub struct Loader;
 
 impl Loader {
+    /// 创建一个新的加载器.
     pub fn new() -> Self {
         Self {}
     }
 
+    /// 从指定目录及其子目录加载所有 JSON 文件作为卡片定义, 注册至 `CardRegistry` 并返回.
+    /// 
+    /// # 校验
+    /// - 每个卡片的 Id 必须唯一.
+    /// - 若发现重复 Id 则返回错误.
     pub fn load_cards_from_dir(&self, dir_path: &Path) -> Result<CardRegistry> {
         let card_registry = CardRegistry::new();
 
@@ -41,6 +66,11 @@ impl Loader {
         Ok(card_registry)
     }
 
+    /// 从指定目录及其子目录加载所有 JSON 文件作为卡组定义, 注册至 `DeckRegistry` 并返回.
+    /// 
+    /// # 校验
+    /// - 卡组 Id 唯一.
+    /// - 卡组中引用的卡片存在于 `card_registry` 注册器中.
     pub fn load_decks_from_dir(&self, dir_path: &Path, card_registry: &CardRegistry) -> Result<DeckRegistry> {
         let deck_registry = DeckRegistry::new();
 
@@ -88,6 +118,14 @@ impl Loader {
         Ok(deck_registry)
     }
 
+    /// 从指定目录及其子目录加载所有 JSON 文件作为逻辑定义, 并注册至传入的 `logic_registry`.
+    /// 
+    /// # 校验
+    /// - 逻辑 Id 唯一.
+    /// - 如果逻辑变体为 `LogicVariant::Hardcoded`, 则引用的执行器名称必须已注册.
+    /// 
+    /// # 注意
+    /// 此方法需要修改传入的 `logic_registry`.
     pub fn load_logics_from_dir(&self, dir_path: &Path, logic_registry: &mut LogicRegistry) -> Result<()> {
         for entry in WalkDir::new(dir_path)
             .into_iter()
@@ -123,6 +161,12 @@ impl Loader {
         Ok(())
     }
 
+    /// 从指定目录及其子目录加载所有 JSON 文件作为卡池定义, 注册至 `BannerRegistry` 中并返回.
+    /// 
+    /// # 校验
+    /// - 卡组 Id 唯一.
+    /// - 引用的逻辑定义和卡组必须存在.
+    /// - 如果逻辑为 `LogicVariant::Hardcoded`, 将检查卡组是否覆盖了所有可能的输出标签组合.
     pub fn load_banner_from_dir(
         &self,
         dir_path: &Path,

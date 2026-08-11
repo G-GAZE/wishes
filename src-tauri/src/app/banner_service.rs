@@ -1,8 +1,11 @@
-use std::{hash::Hasher, sync::Arc};
+//! # 卡池管理和抽卡总服务
+//! 
+//! 提供卡池管理、抽卡执行、状态持久化和卡池相关信息查询等功能.
+//! 该服务是应用层的核心, 协调注册器、逻辑引擎和状态数据库完成一次抽卡流程.
 
+use std::{hash::Hasher, sync::Arc};
 use anyhow::{Context, Result};
 use rand::{SeedableRng, rngs::ChaCha12Rng, seq::IndexedRandom};
-
 use crate::{
     app::logic_engine::LogicEngine,
     domain::{ids::{BannerId, UserId}, wish_result::WishResult},
@@ -14,20 +17,31 @@ use crate::{
 };
 
 
-
 /// 卡池管理和抽卡总服务
+/// 
+/// 持有注册器、逻辑引擎和状态数据库的 `Arc` 引用, 提供:
+/// - 执行单次抽卡 (`wish`)
+/// - 加载/保存卡池逻辑状态
+/// - 查询卡池摘要和详细信息
 pub struct BannerService {
+    /// 卡池注册器引用.
     card_registry: Arc<CardRegistry>,
+    /// 卡组注册器引用.
     deck_registry: Arc<DeckRegistry>,
+    /// 逻辑注册器引用.
     logic_registry: Arc<LogicRegistry>,
+    /// 卡池注册器引用.
     banner_registry: Arc<BannerRegistry>,
-    
+    /// 逻辑引擎引用.
     logic_engine: Arc<LogicEngine>,
+    /// 逻辑状态数据库引用.
     state_repository: Arc<StateRepository>,
 }
 
-
 impl BannerService {
+    /// 创建新的卡池总服务.
+    /// 
+    /// 所有参数均为 `Arc` 引用, 以便在多个服务间共享.
     pub fn new(
         card_registry: Arc<CardRegistry>,
         deck_registry: Arc<DeckRegistry>,
@@ -46,6 +60,23 @@ impl BannerService {
         }
     }
 
+    /// 执行单次抽卡.
+    /// 
+    /// # 流程
+    /// 1. 根据 `banner_id` 获取卡池 (加锁).
+    /// 2. 从卡池逻辑状态中读取 `total_counter`, 并用其构建随机种子.
+    /// 3. 调用逻辑引擎执行抽卡逻辑, 得到逻辑结果 `LogicResult`.
+    /// 4. 根据逻辑结果包含的标签描述从对应卡组中查询候选卡片.
+    /// 5. 在所有候选卡片中等概率随机选取一张.
+    /// 6. 更新卡池逻辑状态中的 `total_counter` 并持久化到数据库.
+    /// 7. 返回抽卡结果 `WishResult`, 包含标签化的卡片和活动标签.
+    /// 
+    /// # 错误
+    /// - 卡池、卡组不存在.
+    /// - 逻辑执行时发生错误.
+    /// - 候选卡片列表为空 (说明卡组未覆盖逻辑的所有可能输出).
+    /// - 等概率随机选取失败.
+    /// - 状态持久化失败.
     pub fn wish(&self, banner_id: BannerId) -> Result<WishResult> {
         let banner_lock = self.banner_registry.get(banner_id)
             .ok_or_else(|| anyhow::anyhow!("未找到 Banner: Id `{}`", banner_id.0))?;
@@ -73,8 +104,9 @@ impl BannerService {
 
         if candidates.is_empty() {
             anyhow::bail!(
-                "Deck {} 没有匹配 Tag {:?} 和 EventTag {:?} 的 Card, 当前 Deck 成员数量: {}",
+                "Deck {} 没有 Logic {} 匹配 Tag {:?} 和 EventTag {:?} 的 Card, 当前 Deck 成员数量: {}",
                 tagged_deck.inner.id.0,
+                tagged_banner.inner.logic_instance.logic_id.0,
                 result.tags,
                 result.event_tags,
                 tagged_deck.inner.members.len()
@@ -98,6 +130,10 @@ impl BannerService {
         })
     }
 
+    /// 从指定用户 (profile)、卡池和抽卡次数构建确定性随机种子.
+    /// 
+    /// 使用 `std::collections::hash_map::DefaultHasher` 将字符串、Id 和计数器混合, 确保同一参数下产生相同随机种子.
+    /// 当前 `profile` 固定为 "0" (单用户模式).
     pub fn build_seed(&self, profile: &str, banner_id: BannerId, total_counter: u32) -> u64 {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         hasher.write(profile.as_bytes());
@@ -106,6 +142,10 @@ impl BannerService {
         hasher.finish()
     }
 
+    /// 从数据库加载所有卡池的逻辑状态.
+    /// 
+    /// 遍历 `banner_registry` 中的所有卡池, 尝试从 `state_repository` 加载状态.
+    /// 若存在则更新到卡池的 `logic_instance.state` 中.
     pub fn load_banner_state(&self) -> Result<()> {
         for banner_id in self.banner_registry.ids() {
             let banner_lock = self.banner_registry.get(banner_id)
@@ -119,6 +159,7 @@ impl BannerService {
         Ok(())
     }
 
+    /// 获取所有卡池的摘要信息列表 `BannerSummary`, 按 Id 排序.
     pub fn get_banner_summaries(&self) -> Vec<BannerSummary> {
         let mut summaries: Vec<_> = self.banner_registry
             .ids()
@@ -137,6 +178,7 @@ impl BannerService {
         summaries
     }
 
+    /// 获取指定卡池的详细信息 `BannerInfo`, 按 Id 排序.
     pub fn get_banner_info(&self, banner_id: BannerId) -> Result<BannerInfo> {
         let banner_lock = self.banner_registry.get(banner_id)
             .ok_or_else(|| anyhow::anyhow!("未找到 Banner: id {}", banner_id.0))?;
