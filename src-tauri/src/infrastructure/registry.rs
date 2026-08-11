@@ -10,7 +10,10 @@ use parking_lot::Mutex;
 use super::{tag_index::TagIndex};
 use crate::domain::{
     banner::TaggedBanner, card::TaggedCard, deck::TaggedDeck, ids::*, logic::{
-        builtins::hardcoded::{GenshinCharacterUpLogic, StarrailCharacterUpLogic}, definition::TaggedLogicDefinition, executor::{HardcodedExecutor, RuleExecutor}
+        builtins::hardcoded::{
+            genshin::GenshinCharacterUpLogic,
+            starrail::StarrailCharacterUpLogic
+        }, definition::TaggedLogicDefinition, executor::{HardcodedExecutor, RuleExecutor}
     }, tag::{EventTag, Tag}
 };
 
