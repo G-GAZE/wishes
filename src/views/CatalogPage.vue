@@ -1,4 +1,9 @@
 <script setup lang="ts">
+/**
+ * 图鉴页面, 展示卡片、卡组、逻辑的统计数量
+ * 调用后端命令 `get_catalog_stats` 获取数据
+ */
+
 import { onMounted, ref } from 'vue';
 import { CatalogStats } from '../types';
 import { invoke } from '@tauri-apps/api/core';
@@ -62,23 +67,27 @@ onMounted(() => {
     transparent 70%
   );
 }
+
 .title {
   font-size: 2.5rem;
   font-weight: 600;
   user-select: none;
 }
+
 .subtitle {
   color: #8a99b4;
   font-size: 1.2rem;
   padding: 10px;
   user-select: none;
 }
+
 .catalog-grid {
   display: grid;
   margin-top: 10px;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
 }
+
 .catalog-card {
   background: rgba(26, 33, 43, 0.25);
   backdrop-filter: blur(10px) saturate(180%);
@@ -96,14 +105,17 @@ onMounted(() => {
   border-color: #4f6ef7;
   transform: translateY(-5px);
 }
+
 .catalog-icon {
   font-size: 2.4rem;
   margin-bottom: 8px;
 }
+
 .catalog-title {
   font-weight: bold;
   font-size: 1.4rem;
 }
+
 .catalog-count {
   margin-top: 4px;
   color: #8a99b4;

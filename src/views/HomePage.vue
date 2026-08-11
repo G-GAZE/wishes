@@ -1,4 +1,9 @@
 <script setup lang="ts">
+/**
+ * 主页, 以网格形式展示所有卡池摘要, 点击跳转至抽卡页
+ * 包含背景光晕跟随鼠标移动的交互效果
+ */
+
 import { ref } from 'vue';
 import { BannerSummary } from '../types';
 
@@ -15,7 +20,7 @@ defineProps<{
 const pageRef = ref<HTMLElement | null>(null);
 const glowRef = ref<HTMLElement | null>(null);
 
-
+/** 鼠标移动时跳转背景光晕位置, 直接视差效果 */
 const handleMouseMove = (e: MouseEvent) => {
   if (!pageRef.value || !glowRef.value) return;
   const rect = pageRef.value.getBoundingClientRect();
@@ -32,6 +37,7 @@ const resetGlow = () => {
   }
 };
 </script>
+
 
 <template>
   <div class="home-page" @mousemove="handleMouseMove" @mouseleave="resetGlow" ref="pageRef">
@@ -67,6 +73,7 @@ const resetGlow = () => {
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .home-page {
@@ -155,6 +162,7 @@ const resetGlow = () => {
 .banner-card:active {
   transform: translateY(5px);
 }
+
 .banner-thumbnail {
   aspect-ratio: 16/9;
   border-radius: 8px;
@@ -166,11 +174,13 @@ const resetGlow = () => {
   height: 100%;
   background: linear-gradient(135deg, #2a3340, #1a212b);
 }
+
 .banner-name {
   font-weight: 500;
   font-size: 1.5rem;
   margin-bottom: 4px;
 }
+
 .banner-tags {
   display: flex;
   flex-wrap: wrap;
@@ -184,6 +194,7 @@ const resetGlow = () => {
   font-size: 1.2rem;
   color: #b0c0d0;
 }
+
 .banner-id {
   position: absolute;
   font-size: 1rem;

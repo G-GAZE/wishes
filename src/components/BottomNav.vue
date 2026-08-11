@@ -1,5 +1,11 @@
 <script setup lang="ts">
+/**
+ * 底部导航组件, 固定于页面底部, 用于切换页面
+ */
 
+/**
+ * 单个导航项信息
+ */
 export interface NavItem {
   key: string,
   label: string,

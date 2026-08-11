@@ -1,4 +1,9 @@
 <script setup lang="ts">
+/**
+ * 设置页面, 展示应用版本、数据目录路径等信息
+ * 调用后端命令 `get_data_dir_path` 获取数据目录路径
+ */
+
 import { invoke } from '@tauri-apps/api/core';
 import { onMounted, ref } from 'vue';
 
@@ -45,7 +50,7 @@ onMounted(() => {
     <span class="subtitle">关于此版本的 Wishes</span>
     <div class="about-section">
       <div class="about-content">
-        <p><strong>Wishes (众愿)</strong> 是一款基于 Tauri 2 和 Vue 3 构建的通用的、可高度自定义的模拟抽卡工具</p>
+        <p><strong>Wishes (众愿)</strong> 是一款基于 Tauri 2 和 Vue 3 构建的通用的、可高度自定义的模拟抽卡工具。</p>
         <p>当前版本: <span class="version">{{ version }}</span></p>
         <p>
           GitHub 项目地址:

@@ -1,26 +1,32 @@
 <script setup lang="ts">
+/**
+ * 抽卡结果浮层, 支持单抽/十连两种模式
+ * - 单抽: 直接展示卡片内容和标签, 点击关闭
+ * - 十连: 逐张展示, 点击继续下一张, 全部展示后进入汇总统计
+ * 包含阶段切换、点击提示和跳过
+ */
+
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { WishResponse } from '../types';
 
 const props = defineProps<{
-  result: WishResponse | null,  // 单抽结果
+  result: WishResponse | null,  // 单抽结果 (仅单抽时使用)
   isTenWish: boolean,
-  tenResults?: WishResponse[],   // 十连结果
+  tenResults?: WishResponse[],   // 十连结果数组
 }>();
 
 const emit = defineEmits<{
   (e: 'close'): void
 }>();
 
-// 计时器间隔
-const timerInterval = 2000;
+const timerInterval = 2000;   // 点击提示出现的延迟时间
 
 // 阶段控制
 const phase = ref<'playing' | 'summary' | 'closing'>('playing');
 const isClosing = ref(false);
 
 
-// 十连状态
+// 十连专用状态
 const currentIndex = ref(0);
 let continueHintTimer: ReturnType<typeof setTimeout> | null = null;
 let closeHintTimer: ReturnType<typeof setTimeout> | null = null;
@@ -59,6 +65,7 @@ function closeOverlay() {
 const showContinueHint = ref(false);
 const showCloseHint = ref(false);
 
+/** 汇总统计: 按稀有度计数 */
 const summaryStats = computed(() => {
   if (!props.tenResults) return null;
   const stats: Record<string, number> = {};
@@ -85,6 +92,7 @@ function restartContinueHintTimer() {
   }, timerInterval)
 }
 
+// 根据是否十连决定显示哪种提示
 watch(() => props.isTenWish, (newVal) => {
   if (newVal) {
     restartContinueHintTimer();
@@ -98,7 +106,7 @@ onUnmounted(() => {
   if (closeHintTimer) clearTimeout(closeHintTimer);
 })
 
-// 处理点击 单抽关闭 十连继续/展示汇总结果/关闭
+/** 处理点击, 单抽关闭, 十连继续/展示汇总结果/关闭 */
 function handleOverlayClick() {
   if (isClosing.value) return;
   if (phase.value === 'summary') {
@@ -123,6 +131,7 @@ function handleOverlayClick() {
   }
 }
 
+/** 十连模式下跳过, 直接展示汇总结果 */
 function handleSkip() {
   if (isClosing.value) return;
   if (phase.value == 'playing') {
@@ -130,6 +139,7 @@ function handleSkip() {
   }
 }
 
+/** 获取稀有度标签值 */
 function getRarity(item: WishResponse): string {
   const tag = item.tags.find(t => t.namespace === "rarity");
   return tag ? tag.value : "unknown";
@@ -248,7 +258,6 @@ function getRarity(item: WishResponse): string {
   justify-content: center;
   animation: fadeIn 0.4s ease;
 }
-
 .overlay.closing {
   animation: fadeOut 0.3s ease forwards;
 }

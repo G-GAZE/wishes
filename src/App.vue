@@ -1,4 +1,12 @@
 <script setup lang="ts">
+/**
+ * 应用根组件
+ * - 管理页面导航和底部导航
+ * - 加载卡池列表, 默认选中第一个
+ * - 处理抽卡逻辑, 并展示结果浮层
+ * - 卡池标签栏的滚动定位
+ */
+
 import { computed, defineAsyncComponent, nextTick, ref, watch } from "vue";
 import BottomNav from "./components/BottomNav.vue";
 import { useWish } from "./composables/useWish";
@@ -17,9 +25,10 @@ const {
 
 const selectedBannerId = ref<number | null>(null);
 
+// 初始化加载
 loadBanners();
 
-// 默认选中第一个卡池
+// 默认选中第一个卡池, 并加载信息
 watch(banners, (new_banners) => {
   if (new_banners.length > 0 && selectedBannerId.value === null) {
     selectedBannerId.value = new_banners[0].id;
@@ -56,11 +65,12 @@ function scrollToActiveBannerTab() {
 }
 
 
+// 抽卡相关状态
 const showWishResultOverlay = ref(false);
 const tenWishResults = ref<WishResponse[]>([]);
 const isTenWish = ref(false);
 
-
+/** 单抽处理 */
 async function handleWishSingle() {
   if (!selectedBannerId.value) return;
   try {
@@ -74,6 +84,7 @@ async function handleWishSingle() {
   }
 }
 
+/** 十连处理 (顺序执行, 后续优化为并行执行) */
 async function handleWishTen() {
   if (!selectedBannerId.value) return;
   try {
@@ -98,6 +109,7 @@ function closeResultOverlay() {
   tenWishResults.value = [];
 }
 
+// 页面懒加载
 const HomePage = defineAsyncComponent(() => import("./views/HomePage.vue"));
 const GachaPage = defineAsyncComponent(() => import("./views/GachaPage.vue"));
 const CatalogPage = defineAsyncComponent(() => import("./views/CatalogPage.vue"));
@@ -115,6 +127,7 @@ const pageMap: Record<string, any> = {
 
 const currentPageComponent = computed(() => pageMap[currentPage.value]);
 
+/** 切换页面 */
 function navigateTo(page: string) {
   currentPage.value = page;
 }

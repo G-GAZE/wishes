@@ -1,4 +1,9 @@
 <script setup lang="ts">
+/**
+ * 抽卡主页面, 显示当前卡池的详细信息并提供抽卡按钮
+ * 通过 `props` 接收 `bannerInfo`, 通过 `emit` 向父组件 (`App.vue`) 传递抽卡事件
+ */
+
 import type { BannerInfo } from '../types';
 
 defineProps<{
@@ -232,6 +237,10 @@ defineEmits<{
   overflow: hidden;
   user-select: none;
 }
+.btn-wish:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 .btn-single {
   background: #2a3340;
@@ -248,10 +257,5 @@ defineEmits<{
 .btn-ten:hover:not(:disabled) {
   background: #3593ff;
   transform: scale(1.02);
-}
-
-.btn-wish:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 </style>
