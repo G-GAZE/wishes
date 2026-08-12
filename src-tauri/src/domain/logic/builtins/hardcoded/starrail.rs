@@ -162,3 +162,107 @@ impl HardcodedExecutor for StarrailCharacterUpLogic {
         ]
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    // 单元测试, 逻辑类似原神
+
+    use super::*;
+    use serde_json::json;
+    use rand::{SeedableRng, rngs::ChaCha12Rng};
+
+    // 固定随机种子
+    fn fixed_rng() -> ChaCha12Rng {
+        ChaCha12Rng::seed_from_u64(42)
+    }
+
+    // 第 90 抽必出 5 星
+    #[test]
+    fn test_starrail_char_up_5_hard_pity() {
+        let mut state = json!({
+            "counter_5": 89,
+            "counter_4": 0,
+            "is_pity_5": false,
+            "is_pity_4": false,
+            "next_char_4": false,
+        });
+        let mut rng = fixed_rng();
+        let logic = StarrailCharacterUpLogic;
+        let result = logic.execute(&mut state, &mut rng);
+
+        // 5 星
+        assert!(result.tags.contains(&Tag::new(Tag::NAMESPACE_RARITY, RARITY_5)));
+        // 5 星计数重置
+        assert_eq!(state["counter_5"].as_u64().unwrap(), 0);
+        // 4 星计数正常 +1
+        assert_eq!(state["counter_4"].as_u64().unwrap(), 1);
+    }
+
+    // 歪过后 5 星必为 up
+    #[test]
+    fn test_starrail_char_up_5_up_pity() {
+        let mut state = json!({
+            "counter_5": 89,
+            "counter_4": 0,
+            "is_pity_5": true,
+            "is_pity_4": false,
+            "next_char_4": false,
+        });
+        let mut rng = fixed_rng();
+        let logic = StarrailCharacterUpLogic;
+        let result = logic.execute(&mut state, &mut rng);
+
+        // 5 星
+        assert!(result.tags.contains(&Tag::new(Tag::NAMESPACE_RARITY, RARITY_5)));
+        // up
+        assert!(result.event_tags.contains(&EventTag::up()));
+        // 5 星计数重置
+        assert_eq!(state["counter_5"].as_u64().unwrap(), 0);
+        // up 保底重置
+        assert_eq!(state["is_pity_5"].as_bool().unwrap(), false);
+        // 4 星计数正常 +1
+        assert_eq!(state["counter_4"].as_u64().unwrap(), 1);
+    }
+
+    // 当 counter_4 == 9 但出 5 星时, 4 星保底顺延 (counter_4 不重置)
+    #[test]
+    fn test_starrail_char_up_4_pity_extension_after_5() {
+        let mut state = json!({
+            "counter_5": 89,
+            "counter_4": 9,
+            "is_pity_5": false,
+            "is_pity_4": false,
+            "next_char_4": false,
+        });
+        let mut rng = fixed_rng();
+        let logic = StarrailCharacterUpLogic;
+
+        let result1 = logic.execute(&mut state, &mut rng);
+        assert!(result1.tags.contains(&Tag::new(Tag::NAMESPACE_RARITY, RARITY_5)));
+        assert_eq!(state["counter_5"].as_u64().unwrap(), 0);
+        assert_eq!(state["counter_4"].as_u64().unwrap(), 10);   // 4 星保底顺延
+
+        // 可能为 4 星或 5 星
+        let result2 = logic.execute(&mut state, &mut rng);
+        assert!(!result2.tags.contains(&Tag::new(Tag::NAMESPACE_RARITY, RARITY_3)));
+    }
+
+    // 第 10 抽必出 4 星及以上
+    #[test]
+    fn test_starrail_char_up_4_hard_pity() {
+        let mut state = json!({
+            "counter_5": 0,
+            "counter_4": 9,
+            "is_pity_5": false,
+            "is_pity_4": false,
+            "next_char_4": false,
+        });
+        let mut rng = fixed_rng();
+        let logic = StarrailCharacterUpLogic;
+        let result = logic.execute(&mut state, &mut rng);
+
+        // 反向测试: 出 4/5 星 -> 不是 3 星
+        assert!(!result.tags.contains(&Tag::new(Tag::NAMESPACE_RARITY, RARITY_3)));
+    }
+}

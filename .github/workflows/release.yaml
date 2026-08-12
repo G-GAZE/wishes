@@ -52,8 +52,13 @@ jobs:
           fi
           echo "版本一致"
   
-  build-windows:
+  # 复用 CI 测试工作流
+  call-ci:
     needs: check-version
+    uses: ./.github/workflows/ci.yaml
+  
+  build-windows:
+    needs: [check-version, call-ci]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7

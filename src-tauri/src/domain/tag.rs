@@ -98,7 +98,7 @@ where
 /// ```rust
 /// # use wishes_lib::domain::tag::EventTag;
 /// let event_tag = EventTag::new("up");
-/// assert_eq!(event.0, "up");
+/// assert_eq!(event_tag.0, "up");
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventTag(pub String);
@@ -160,7 +160,7 @@ impl From<&str> for EventTag {
 /// 
 /// ```rust
 /// # use std::collections::HashSet;
-/// # use wishes_lib::domain::tag::Tagged;
+/// # use wishes_lib::domain::tag::{Tag, Tagged};
 /// let data = vec![1, 2, 3];
 /// let mut tagged = Tagged::new(data);
 /// tagged.add_tag(Tag::new("type", "numbers"));
