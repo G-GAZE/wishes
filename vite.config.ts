@@ -3,12 +3,16 @@ import vue from "@vitejs/plugin-vue";
 
 import pkg from "./package.json";
 
-// @ts-expect-error process is a nodejs global
+// process is a nodejs global (available in Vite config)
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
   plugins: [vue()],
+  test: {
+    globals: true,
+    environment: "happy-dom"
+  },
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
