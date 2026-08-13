@@ -1,6 +1,6 @@
 [package]
 name = "wishes"
-version = "0.1.0"
+version = "0.1.1"
 description = "A versatile and highly customizable gacha simulation tool built with Tauri 2 and Vue 3."
 authors = ["G-GAZE"]
 edition = "2021"
