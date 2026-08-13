@@ -1,0 +1,15 @@
+# 所有文本文件默认使用 LF
+* text=auto
+
+# Rust
+*.rs text eol=lf
+
+# Cargo
+*.toml text eol=lf
+*.lock text eol=lf
+
+# Vue
+*.vue text eol=lf
+*.ts text eol=lf
+
+*.json text eol=lf
