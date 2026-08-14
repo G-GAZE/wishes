@@ -29,3 +29,6 @@ anyhow = "1.0.104"
 walkdir = "2"
 rusqlite = { version = "0.40.1", features = ["bundled"] }
 parking_lot = "0.12.5"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tauri-plugin-tracing = "0.3"
