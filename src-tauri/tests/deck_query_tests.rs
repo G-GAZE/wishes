@@ -34,10 +34,10 @@ fn test_deck_query_without_event_tags() {
         event_groups: HashMap::new(),
     };
 
-    let tags = HashSet::from([
+    let tags = vec![
         Tag::new("game", "genshin")
-    ]);
-    let event_tags = HashSet::new();
+    ];
+    let event_tags = Vec::new();
 
     let result = deck.query_cards(&registry, &tags, &event_tags);
     assert_eq!(result, vec![CardId(1)]);
@@ -68,10 +68,10 @@ fn test_deck_query_with_event_tags() {
         event_groups,
     };
 
-    let tags = HashSet::from([
+    let tags = vec![
         Tag::new("game", "genshin")
-    ]);
-    let event_tags = HashSet::from([EventTag::up()]);
+    ];
+    let event_tags = vec![EventTag::up()];
 
     let result = deck.query_cards(&registry, &tags, &event_tags);
     assert_eq!(result, vec![CardId(2)]);

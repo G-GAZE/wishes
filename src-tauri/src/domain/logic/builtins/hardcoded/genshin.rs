@@ -1,6 +1,5 @@
 //! # 原神 硬编码执行器实现
 
-use std::collections::HashSet;
 use rand::RngExt;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
@@ -169,27 +168,27 @@ impl HardcodedExecutor for GenshinCharacterUpLogic {
         result
     }
 
-    fn possible_output_combinations(&self) -> Vec<(HashSet<Tag>, HashSet<EventTag>)> {
+    fn possible_output_combinations(&self) -> Vec<(Vec<Tag>, Vec<EventTag>)> {
         vec![
             (
-                HashSet::from([Tag::new(Tag::NAMESPACE_RARITY, RARITY_5), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)]),
-                HashSet::from([EventTag::up()])
+                vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_5), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)],
+                vec![EventTag::up()]
             ),
             (
-                HashSet::from([Tag::new(Tag::NAMESPACE_RARITY, RARITY_4), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)]),
-                HashSet::from([EventTag::up()])
+                vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_4), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)],
+                vec![EventTag::up()]
             ),
             (
-                HashSet::from([Tag::new(Tag::NAMESPACE_RARITY, RARITY_4), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)]),
-                HashSet::from([EventTag::standard()])
+                vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_4), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)],
+                vec![EventTag::standard()]
             ),
             (
-                HashSet::from([Tag::new(Tag::NAMESPACE_RARITY, RARITY_4), Tag::new(Tag::NAMESPACE_TYPE, TYPE_WEAPON)]),
-                HashSet::from([EventTag::standard()])
+                vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_4), Tag::new(Tag::NAMESPACE_TYPE, TYPE_WEAPON)],
+                vec![EventTag::standard()]
             ),
             (
-                HashSet::from([Tag::new(Tag::NAMESPACE_RARITY, RARITY_3), Tag::new(Tag::NAMESPACE_TYPE, TYPE_WEAPON)]),
-                HashSet::from([EventTag::standard()])
+                vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_3), Tag::new(Tag::NAMESPACE_TYPE, TYPE_WEAPON)],
+                vec![EventTag::standard()]
             )
         ]
     }

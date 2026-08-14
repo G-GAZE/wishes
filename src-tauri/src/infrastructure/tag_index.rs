@@ -26,16 +26,23 @@ where
     /// 为指定 Id 插入一组标签.
     /// 
     /// 每个标签都会建立到该 Id 的映射.
-    pub fn insert(&self, id: Id, tags: &HashSet<Tag>) {
+    pub fn insert(&self, id: Id, tags: &[Tag]) {
         for tag in tags {
             self.tag_to_ids.entry(tag.clone()).or_insert_with(HashSet::new).insert(id);
         }
     }
 
-    /// 查询同时又有给定标签集合的所有 Id (交集查询).
+    pub fn remove(&self, id: Id, tag: &Tag) {
+        if let Some(mut entry) = self.tag_to_ids.get_mut(tag) {
+            entry.remove(&id);
+            // 集合为空时, 保留
+        }
+    }
+
+    /// 查询同时拥有给定标签集合的所有 Id (交集查询).
     /// 
     /// 如果传入的标签集合为空, 返回空集.
-    pub fn query(&self, tags: &HashSet<Tag>) -> HashSet<Id> {
+    pub fn query(&self, tags: &[Tag]) -> HashSet<Id> {
         let mut iter = tags.iter();
         if let Some(first) = iter.next() {
             let mut result = self.tag_to_ids.get(first)

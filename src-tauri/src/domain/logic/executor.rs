@@ -1,6 +1,5 @@
 //! # 执行器 Trait 定义.
 
-use std::collections::HashSet;
 use serde_json::Value as JsonValue;
 use rand::rngs::ChaCha12Rng;
 use crate::domain::{logic::result::LogicResult, tag::{EventTag, Tag}};
@@ -14,7 +13,7 @@ pub trait HardcodedExecutor: Send + Sync {
     ) -> LogicResult;
 
     /// 返回所有可能的输出组合, 用于加载器进行逻辑到卡组的标签覆盖性测试.
-    fn possible_output_combinations(&self) -> Vec<(HashSet<Tag>, HashSet<EventTag>)>;
+    fn possible_output_combinations(&self) -> Vec<(Vec<Tag>, Vec<EventTag>)>;
 }
 
 /// 规则执行器 Trait (用于 `LogicVariant::RuleBased` 中的单个规则).

@@ -31,8 +31,8 @@ impl Deck {
     /// 
     /// # 返回
     /// 符合条件的卡片 Id 列表, 顺序不确定.
-    pub fn query_cards(&self, registry: &CardRegistry, tags: &HashSet<Tag>, event_tags: &HashSet<EventTag>) -> Vec<CardId> {
-        let mut cards = registry.tag_index().query(&tags);
+    pub fn query_cards(&self, registry: &CardRegistry, tags: &[Tag], event_tags: &[EventTag]) -> Vec<CardId> {
+        let mut cards = registry.tag_index().query(tags);
 
         cards.retain(|id| self.members.contains(id));
 
