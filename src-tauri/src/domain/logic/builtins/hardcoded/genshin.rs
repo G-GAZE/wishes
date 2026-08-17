@@ -1,6 +1,5 @@
 //! # 原神 硬编码执行器实现
 
-use std::collections::HashSet;
 use rand::RngExt;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
@@ -28,7 +27,7 @@ struct GenshinCharacterUpState {
     is_pity_5: bool,
     is_pity_4: bool,
     next_char_4: bool,
-    capture_counter: u16,       // 原神v5.0 捕获明光机制计数器, 默认值为 1
+    capture_counter: u16,       // 原神v5.0 捕获明光机制计数器, 默认值为 1, 下限为 0
 }
 
 impl Default for GenshinCharacterUpState {
@@ -110,8 +109,8 @@ impl GenshinCharacterUpLogic {
                 let event_tag = if up { EventTag::up() } else { EventTag::standard() };
 
                 new_state.is_pity_5 = !up;
-                if up && !capture {
-                    new_state.capture_counter -= 1;
+                if up && !state.is_pity_5 && !capture {         // 条件: up + 非大保底 + 非捕获
+                    new_state.capture_counter = new_state.capture_counter.saturating_sub(1);    // 计数器下限为 0
                 }
                 
                 let result = LogicResult::new()
@@ -169,27 +168,27 @@ impl HardcodedExecutor for GenshinCharacterUpLogic {
         result
     }
 
-    fn possible_output_combinations(&self) -> Vec<(HashSet<Tag>, HashSet<EventTag>)> {
+    fn possible_output_combinations(&self) -> Vec<(Vec<Tag>, Vec<EventTag>)> {
         vec![
             (
-                HashSet::from([Tag::new(Tag::NAMESPACE_RARITY, RARITY_5), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)]),
-                HashSet::from([EventTag::up()])
+                vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_5), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)],
+                vec![EventTag::up()]
             ),
             (
-                HashSet::from([Tag::new(Tag::NAMESPACE_RARITY, RARITY_4), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)]),
-                HashSet::from([EventTag::up()])
+                vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_4), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)],
+                vec![EventTag::up()]
             ),
             (
-                HashSet::from([Tag::new(Tag::NAMESPACE_RARITY, RARITY_4), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)]),
-                HashSet::from([EventTag::standard()])
+                vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_4), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)],
+                vec![EventTag::standard()]
             ),
             (
-                HashSet::from([Tag::new(Tag::NAMESPACE_RARITY, RARITY_4), Tag::new(Tag::NAMESPACE_TYPE, TYPE_WEAPON)]),
-                HashSet::from([EventTag::standard()])
+                vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_4), Tag::new(Tag::NAMESPACE_TYPE, TYPE_WEAPON)],
+                vec![EventTag::standard()]
             ),
             (
-                HashSet::from([Tag::new(Tag::NAMESPACE_RARITY, RARITY_3), Tag::new(Tag::NAMESPACE_TYPE, TYPE_WEAPON)]),
-                HashSet::from([EventTag::standard()])
+                vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_3), Tag::new(Tag::NAMESPACE_TYPE, TYPE_WEAPON)],
+                vec![EventTag::standard()]
             )
         ]
     }

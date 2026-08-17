@@ -10,8 +10,8 @@ pub mod utils;
 use tauri::{Manager, State};
 use anyhow::{Context, Result};
 use crate::{
-    app::state::AppState, domain::ids::BannerId, interface::{
-        banner_info::{BannerInfo, BannerSummary}, catalog_stats::CatalogStats, wish_response::WishResponse
+    app::state::AppState, domain::{ids::{BannerId, CardId}, tag::Tag}, interface::{
+        banner_info::{BannerInfo, BannerSummary}, card_response::{CardCreateRequest, CardSummary, CardUpdateRequest}, catalog_stats::CatalogStats, wish_response::WishResponse
     }, utils::path::get_or_create_data_dir
 };
 
@@ -26,7 +26,6 @@ use crate::{
 #[tauri::command]
 fn wish(banner_id: u64, state: State<AppState>) -> Result<WishResponse, String> {
     let banner_id = BannerId(banner_id);
-    let state: &AppState = state.inner();       // rust-analyzer 在此无法给出自动补全提示, 手动解引用以帮助补全
     match state.wish(banner_id) {
         Ok(result) => {
             Ok(WishResponse::new(result))
@@ -40,7 +39,6 @@ fn wish(banner_id: u64, state: State<AppState>) -> Result<WishResponse, String> 
 /// 返回 `Vec<BannerSummary>` 供前端展示.
 #[tauri::command]
 fn get_banners(state: State<AppState>) -> Result<Vec<BannerSummary>, String> {
-    let state: &AppState = state.inner();
     Ok(state.banner_service.get_banner_summaries())
 }
 
@@ -53,7 +51,6 @@ fn get_banners(state: State<AppState>) -> Result<Vec<BannerSummary>, String> {
 #[tauri::command]
 fn get_banner_info(banner_id: u64, state: State<AppState>) -> Result<BannerInfo, String> {
     let banner_id = BannerId(banner_id);
-    let state: &AppState = state.inner();
     state.banner_service.get_banner_info(banner_id)
         .map_err(|e| e.to_string())
 }
@@ -61,7 +58,6 @@ fn get_banner_info(banner_id: u64, state: State<AppState>) -> Result<BannerInfo,
 /// 获取当前图鉴的统计信息.
 #[tauri::command]
 fn get_catalog_stats(state: State<AppState>) -> Result<CatalogStats, String> {
-    let state: &AppState = state.inner();
     Ok(state.get_catalog_stats())
 }
 
@@ -69,6 +65,48 @@ fn get_catalog_stats(state: State<AppState>) -> Result<CatalogStats, String> {
 #[tauri::command]
 fn get_data_dir_path(state: State<AppState>) -> Result<String, String> {
     Ok(state.data_dir.to_string_lossy().into_owned())
+}
+
+/// 获取所有卡片信息.
+#[tauri::command]
+fn list_cards(state: State<AppState>) -> Result<Vec<CardSummary>, String> {
+    let cards = state.card_manager.list_all();
+    Ok(cards.iter().map(|card| CardSummary::from(card.as_ref())).collect())
+}
+
+/// 获取根据标签筛选后的卡片的信息.
+#[tauri::command]
+fn list_cards_by_tags(tags: Vec<Tag>, state: State<AppState>) -> Result<Vec<CardSummary>, String> {
+    let cards = state.card_manager.list_by_tags(&tags);
+    Ok(cards.iter().map(|card| CardSummary::from(card.as_ref())).collect())
+}
+
+/// 创建新的卡片.
+#[tauri::command]
+fn create_card(req: CardCreateRequest, state: State<AppState>) -> Result<CardSummary, String> {
+    let card = state.card_manager.create_card(req.content, req.tags)
+        .map_err(|e| e.to_string())?;
+    Ok(CardSummary::from(&card))
+}
+
+/// 更新卡片信息.
+#[tauri::command]
+fn update_card(req: CardUpdateRequest, state: State<AppState>) -> Result<CardSummary, String> {
+    let id = CardId(req.id);
+    let card = state.card_manager.update_card(
+        id, 
+        req.new_content,
+        req.new_tags
+    ).map_err(|e| e.to_string())?;
+    Ok(CardSummary::from(&card))
+}
+
+/// 删除卡片.
+#[tauri::command]
+fn delete_card(id: u64, state: State<AppState>) -> Result<(), String> {
+    let id = CardId(id);
+    state.card_manager.delete_card(id).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 /// `Tauri` 应用启动入口.
@@ -91,6 +129,11 @@ pub fn run() {
             get_banner_info,
             get_catalog_stats,
             get_data_dir_path,
+            list_cards,
+            list_cards_by_tags,
+            create_card,
+            update_card,
+            delete_card,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Wishes");

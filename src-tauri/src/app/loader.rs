@@ -41,6 +41,7 @@ impl Loader {
     /// - 若发现重复 Id 则返回错误.
     pub fn load_cards_from_dir(&self, dir_path: &Path) -> Result<CardRegistry> {
         let card_registry = CardRegistry::new();
+        let mut max_id = 0;
 
         for entry in WalkDir::new(dir_path)
             .into_iter()
@@ -58,10 +59,17 @@ impl Loader {
                 anyhow::bail!("重复声明的 Card Id `{}` - file: {}", id.0, path.display())
             }
 
-            card_registry.tag_index().insert(id, &tagged_card.tags);
+            if id.0 > max_id {                          // 获取最大 Id
+                max_id = id.0;
+            }
+
+            let tags: Vec<_> = tagged_card.tags.iter().cloned().collect();
+            card_registry.tag_index().insert(id, &tags);
             card_registry.insert(tagged_card);
             card_registry.insert_path(id, path.to_path_buf());
         }
+
+        card_registry.reset_id(max_id);
 
         Ok(card_registry)
     }
@@ -109,7 +117,8 @@ impl Loader {
                 }
             }
 
-            deck_registry.tag_index.insert(id, &tagged_deck.tags);
+            let tags: Vec<_> = tagged_deck.tags.iter().cloned().collect();
+            deck_registry.tag_index.insert(id, &tags);
             deck_registry.insert(tagged_deck);
             // TODO: 添加路径
             
@@ -151,8 +160,9 @@ impl Loader {
                     )
                 }
             }
-
-            logic_registry.tag_index.insert(id, &tagged_logic_def.tags);
+            
+            let tags: Vec<_> = tagged_logic_def.tags.iter().cloned().collect();
+            logic_registry.tag_index.insert(id, &tags);
             logic_registry.insert_definition(tagged_logic_def);
             // 添加路径
 
@@ -225,7 +235,8 @@ impl Loader {
                     }
                 }
 
-                banner_registry.tag_index.insert(id, &tagged_banner.tags);
+                let tags: Vec<_> = tagged_banner.tags.iter().cloned().collect();
+                banner_registry.tag_index.insert(id, &tags);
                 banner_registry.insert(tagged_banner);
                 // 添加路径
 

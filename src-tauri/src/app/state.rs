@@ -8,14 +8,11 @@ use std::{path::{Path, PathBuf}, sync::Arc};
 use anyhow::{Ok, Result};
 use crate::{
     app::{
-        banner_service::BannerService,
-        logic_engine::LogicEngine
-    },
-    domain::{
+        admin::card_manager::CardManager, banner_service::BannerService, logic_engine::LogicEngine
+    }, domain::{
         ids::BannerId,
         wish_result::WishResult
-    },
-    infrastructure::{
+    }, infrastructure::{
         registry::{
             BannerRegistry,
             CardRegistry,
@@ -23,8 +20,7 @@ use crate::{
             LogicRegistry
         },
         repository::state_repo::StateRepository
-    },
-    interface::catalog_stats::CatalogStats
+    }, interface::catalog_stats::CatalogStats
 };
 use super::loader::Loader;
 
@@ -40,10 +36,16 @@ pub struct AppState {
     pub logic_registry: Arc<LogicRegistry>,
     /// 卡池注册器引用.
     pub banner_registry: Arc<BannerRegistry>,
+
+    /// 卡片管理器实例.
+    pub card_manager: CardManager,
+
     /// 逻辑引擎引用.
     pub logic_engine: Arc<LogicEngine>,
-    /// 卡池服务引用.
-    pub banner_service: Arc<BannerService>,
+
+    /// 卡池服务实例.
+    pub banner_service: BannerService,
+
     /// 存储当前使用的数据目录路径.
     pub data_dir: PathBuf,
 }
@@ -91,6 +93,9 @@ impl AppState {
         let deck_registry = Arc::new(deck_registry);
         let logic_registry = Arc::new(logic_registry);
         let banner_registry = Arc::new(banner_registry);
+
+        // 初始化管理器
+        let card_manager = CardManager::new(card_registry.clone(), data_dir.join("cards"));
         
         // 初始化逻辑执行引擎
         let logic_engine = Arc::new(LogicEngine::new(logic_registry.clone()));
@@ -98,14 +103,14 @@ impl AppState {
         // 连接逻辑状态数据库
         let state_repository = Arc::new(StateRepository::new(&data_dir.join("states.db"))?);
 
-        let banner_service = Arc::new(BannerService::new(
+        let banner_service = BannerService::new(
             card_registry.clone(),
             deck_registry.clone(),
             logic_registry.clone(),
             banner_registry.clone(),
             logic_engine.clone(),
             state_repository.clone(),
-        ));
+        );
 
         banner_service.load_banner_state()?;
 
@@ -114,6 +119,7 @@ impl AppState {
             deck_registry,
             logic_registry,
             banner_registry,
+            card_manager,
             logic_engine,
             banner_service,
             data_dir: data_dir.to_path_buf(),

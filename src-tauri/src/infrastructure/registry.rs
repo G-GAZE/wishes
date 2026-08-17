@@ -4,17 +4,20 @@
 //! 每个注册器均内建标签索引以支持快速标签查询.
 //! 所有存储均采用并发安全的 `DashMap` 和 `Arc`.
 
-use std::{collections::HashSet, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 use dashmap::DashMap;
 use parking_lot::Mutex;
 use super::{tag_index::TagIndex};
-use crate::domain::{
-    banner::TaggedBanner, card::TaggedCard, deck::TaggedDeck, ids::*, logic::{
-        builtins::hardcoded::{
-            genshin::GenshinCharacterUpLogic,
-            starrail::StarrailCharacterUpLogic
-        }, definition::TaggedLogicDefinition, executor::{HardcodedExecutor, RuleExecutor}
-    }, tag::{EventTag, Tag}
+use crate::{
+    domain::{
+        banner::TaggedBanner, card::TaggedCard, deck::TaggedDeck, ids::*, logic::{
+            builtins::hardcoded::{
+                genshin::GenshinCharacterUpLogic,
+                starrail::StarrailCharacterUpLogic
+            }, definition::TaggedLogicDefinition, executor::{HardcodedExecutor, RuleExecutor}
+        }, tag::{EventTag, Tag}
+    },
+    infrastructure::id_allocator::IdAllocator
 };
 
 /// 卡片注册器.
@@ -27,8 +30,10 @@ pub struct CardRegistry {
     storage: DashMap<CardId, Arc<TaggedCard>>,
     /// 内建的标签索引.
     pub tag_index: TagIndex<CardId>,
-    /// 预留的卡片配置文件路径记录.
-    paths: DashMap<CardId, PathBuf>,    // 预留, 后期用于记录 Card 来源文件并写回修改
+    /// 卡片配置文件路径记录.
+    paths: DashMap<CardId, PathBuf>,
+    /// 卡片 Id 分配器.
+    allocator: IdAllocator<CardId>,
 }
 
 impl CardRegistry {
@@ -38,7 +43,18 @@ impl CardRegistry {
             storage: DashMap::new(),
             tag_index: TagIndex::new(),
             paths: DashMap::new(),
+            allocator: IdAllocator::new(),
         }
+    }
+
+    /// 分配一个新的卡片 Id.
+    pub fn allocate_id(&self) -> CardId {
+        self.allocator.allocate()
+    }
+
+    /// 重新设置 Id 分配的起始值.
+    pub fn reset_id(&self, max_id_u64: u64) {
+        self.allocator.reset(max_id_u64);
     }
 
     /// 获取标签索引的引用.
@@ -55,7 +71,7 @@ impl CardRegistry {
 
     /// 插入一张卡片, 同时加入标签索引.
     pub fn insert(&self, card: TaggedCard) {
-        let tags = card.tags.clone();
+        let tags: Vec<Tag> = card.tags.iter().cloned().collect();
         self.tag_index.insert(card.inner.id, &tags);
         self.storage.insert(card.inner.id, Arc::new(card));
     }
@@ -65,14 +81,40 @@ impl CardRegistry {
         self.paths.insert(id, path);
     }
 
+    /// 删除指定 Id 的卡片.
+    /// 该操作不会删除卡片文件的路径存储.
+    pub fn remove(&self, id: CardId) {
+        if let Some(entry) = self.storage.remove(&id) {
+            let tags = entry.1.tags.clone();
+            for tag in tags {
+                self.tag_index.remove(id, &tag);
+            }
+        }
+    }
+
+    /// 删除指定 Id 的卡片配置文件路径的存储.
+    pub fn remove_path(&self, id: CardId) {
+        self.paths.remove(&id);
+    }
+
     /// 通过 Id 获取卡片的一个 `Arc` 引用.
     pub fn get(&self, id: CardId) -> Option<Arc<TaggedCard>> {
         self.storage.get(&id).map(|refs| refs.clone())
     }
 
+    /// 通过 Id 获取对应卡片的配置文件路径.
+    pub fn get_path(&self, id: CardId) -> Option<PathBuf> {
+        self.paths.get(&id).map(|refs| refs.clone())
+    }
+
     /// 返回卡片总数.
     pub fn count(&self) -> usize {
         self.storage.len()
+    }
+
+    /// 获取所有卡片, 顺序不确定.
+    pub fn all_cards(&self) -> Vec<Arc<TaggedCard>> {
+        self.storage.iter().map(|entry| entry.value().clone()).collect()
     }
 }
 
@@ -245,7 +287,7 @@ impl LogicRegistry {
     }
 
     /// 获取指定硬编码执行器可能输出的所有标签组合 (用于加载器进行标签覆盖性测试).
-    pub fn hardcoded_possible_output_combinations(&self, name: &str) -> Option<Vec<(HashSet<Tag>, HashSet<EventTag>)>> {
+    pub fn hardcoded_possible_output_combinations(&self, name: &str) -> Option<Vec<(Vec<Tag>, Vec<EventTag>)>> {
         self.hardcoded_executors.get(name)
             .map(|guard| guard.value().possible_output_combinations())
     }

@@ -8,6 +8,7 @@
 
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { WishResponse } from '../types';
+import { useTagStyles } from '../composables/useTagStyles';
 
 const props = defineProps<{
   result: WishResponse | null,  // 单抽结果 (仅单抽时使用)
@@ -144,6 +145,18 @@ function getRarity(item: WishResponse): string {
   const tag = item.tags.find(t => t.namespace === "rarity");
   return tag ? tag.value : "unknown";
 }
+
+// 单抽模式下的标签类名
+const singleTagClasses = computed(() => {
+  if (!props.result) return [];
+  return useTagStyles(props.result.tags);
+});
+
+// 十连模式下当前卡片的标签类名
+const currentTagClasses = computed(() => {
+  if (!props.isTenWish || !props.tenResults) return [];
+  return useTagStyles(currentCard.value?.tags || []);
+});
 </script>
 
 
@@ -158,15 +171,15 @@ function getRarity(item: WishResponse): string {
         </div>
         <div v-if="result.tags.length" class="tags">
           <span
-            v-for="tag in result.tags"
+            v-for="(tag, index) in result.tags"
             :key="tag.namespace" class="tag"
-            :class="tag.namespace === 'rarity' ? `rarity-${tag.value}` : ''"
+            :class="singleTagClasses[index]"
           >
             {{ tag.value }}
           </span>
         </div>
         <div v-if="result.event_tags.length" class="event-tags">
-          <span v-for="et in result.event_tags" :key="et" class="event-tag" :class="`event-${et}`">
+          <span v-for="et in result.event_tags" :key="et" class="event-tag" :class="`tag-event-${et}`">
             {{ et }}
           </span>
         </div>
@@ -186,16 +199,16 @@ function getRarity(item: WishResponse): string {
                 </div>
                 <div v-if="currentCard?.tags.length" class="tags">
                   <span
-                    v-for="tag in currentCard.tags"
+                    v-for="(tag, index) in currentCard.tags"
                     :key="tag.namespace"
                     class="tag"
-                    :class="tag.namespace === 'rarity' ? `rarity-${tag.value}` : ''"
+                    :class="currentTagClasses[index]"
                   >
                     {{ tag.value }}
                   </span>
                 </div>
                 <div v-if="currentCard?.event_tags.length" class="event-tags">
-                  <span v-for="et in currentCard.event_tags" :key="et" class="event-tag" :class="`event-${et}`">
+                  <span v-for="et in currentCard.event_tags" :key="et" class="event-tag" :class="`tag-event-${et}`">
                     {{ et }}
                   </span>
                 </div>
@@ -206,12 +219,12 @@ function getRarity(item: WishResponse): string {
           <!-- 汇总 -->
           <div v-else-if="phase === 'summary'" key="summary">
             <div class="summary-stats">
-              <div v-for="(count, rarity) in summaryStats" :key="rarity" class="stat-item" :class="`rarity-${rarity}`">
+              <div v-for="(count, rarity) in summaryStats" :key="rarity" class="stat-item" :class="`tag-rarity-${rarity}`">
                 Rarity {{ rarity }} : {{ count }}
               </div>
             </div>
             <div class="summary-list">
-              <div v-for="(item, idx) in tenResults" :key="idx" class="summary-item" :class="`rarity-${getRarity(item)}`">
+              <div v-for="(item, idx) in tenResults" :key="idx" class="summary-item" :class="`tag-rarity-${getRarity(item)}`">
                 {{ item.content }}
               </div>
             </div>
@@ -340,11 +353,12 @@ function getRarity(item: WishResponse): string {
 }
 
 .tag {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--tag-bg, var(--tag-default-bg));
+  color: var(--tag-color, var(--tag-default-color));
+
   padding: 3px 16px;
   border-radius: 100px;
   font-size: 1.4rem;
-  color: #b0c0d0;
   transition: all 0.2s ease;
 }
 .tag:hover {
@@ -356,6 +370,8 @@ function getRarity(item: WishResponse): string {
 }
 
 .event-tag {
+  background: var(--tag-bg, var(--tag-default-bg));
+  color: var(--tag-color, var(--tag-default-color));
   display: inline-block;
   padding: 3px 20px;
   border-radius: 100px;
@@ -392,13 +408,14 @@ function getRarity(item: WishResponse): string {
 }
 
 .stat-item {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--tag-bg, var(--tag-default-bg));
+  color: var(--tag-color, var(--tag-default-color));
+
   backdrop-filter: blur(4px);
   padding: 6px 20px;
   border-radius: 100px;
   font-size: 1.5rem;
   font-weight: 600;
-  color: #e8edf5;
   box-shadow: 0 0 20px rgba(255, 215, 0, 0.1);
   transition: all 0.2s ease;
 }
@@ -417,38 +434,15 @@ function getRarity(item: WishResponse): string {
 }
 
 .summary-item {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--tag-bg, var(--tag-default-bg));
+  color: var(--tag-color, var(--tag-default-color));
+
   padding: 4px 16px;
   border-radius: 100px;
   font-size: 1.3rem;
-  color: #c8d4e8;
   transition: all 0.2s ease;
 }
 .summary-item:hover {
   transform: translateY(-3px);
-}
-
-.rarity-5,
-.rarity-S {
-  background: rgba(255, 228, 73, 0.15);
-  color: #ffd700;
-}
-.rarity-4,
-.rarity-A {
-  background: rgba(180, 138, 255, 0.15);
-  color: #b48aff;
-}
-.rarity-3,
-.rarity-B {
-  background: rgba(107, 184, 255, 0.12);
-  color: #6bb8ff;
-}
-
-.event-up {
-  background: #f7b731;
-  color: #0b0e14;
-}
-.event-standard {
-  background: rgba(255, 255, 255, 0.1);
 }
 </style>
