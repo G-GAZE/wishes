@@ -1,0 +1,38 @@
+/**
+ * TODO[2026-08-16]: 未来需要游戏差异化标签样式, 修改 getTagClass 函数
+ *
+ * 详见 src/composables/useTagStyles.ts
+ */
+
+
+/* 标签默认颜色样式 */
+:root {
+  --tag-default-bg: rgba(255, 255, 255, 0.06);
+  --tag-default-color: #b0c0d0;
+}
+
+/* 稀有度标签 */
+.tag-rarity-5,
+.tag-rarity-S {
+  --tag-bg: rgba(255, 228, 73, 0.15);
+  --tag-color: #ffd700;
+}
+.tag-rarity-4,
+.tag-rarity-A {
+  --tag-bg: rgba(180, 138, 255, 0.15);
+  --tag-color: #b48aff;
+}
+.tag-rarity-3,
+.tag-rarity-B {
+  --tag-bg: rgba(107, 184, 255, 0.12);
+  --tag-color: #6bb8ff;
+}
+
+/* 活动标签 */
+.tag-event-up {
+  --tag-bg: #f7b731;
+  --tag-color: #0b0e14;
+}
+.tag-event-standard {
+  --tag-bg: rgba(255, 255, 255, 0.1);
+}
