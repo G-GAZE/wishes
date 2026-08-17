@@ -128,7 +128,7 @@ const resetGlow = () => {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 16px;
   align-content: start;
   overflow-y: auto;
