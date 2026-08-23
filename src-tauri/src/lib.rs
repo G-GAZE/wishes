@@ -112,13 +112,30 @@ fn delete_card(id: u64, state: State<AppState>) -> Result<(), String> {
 /// `Tauri` 应用启动入口.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(debug_assertions)]
+    tracing_subscriber::fmt()
+        .with_env_filter("wishes=debug")
+        .with_target(false)
+        .init();
+
+    #[cfg(not(debug_assertions))]
+    tracing_subscriber::fmt()
+        .with_env_filter("wishes=info")
+        .init();
+
     tauri::Builder::default()
         .setup(|app| {
             let handle = app.handle();
             let data_dir = get_or_create_data_dir(&handle)
                 .with_context(|| "获取数据目录失败")?;
             
-            let app_state = AppState::load(&data_dir).with_context(|| "Wishes 启动失败")?;
+            let app_state = AppState::load(&data_dir).map_err(|e| {
+                tracing::error!("Wishes 启动失败");
+                for cause in e.chain() {
+                    tracing::error!("- {}", cause);
+                }
+                e
+            })?;
             app.manage(app_state);
             Ok(())
         })

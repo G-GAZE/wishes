@@ -109,7 +109,7 @@ impl BannerService {
                 tagged_banner.inner.logic_instance.logic_id.0,
                 result.tags,
                 result.event_tags,
-                tagged_deck.inner.members.len()
+                tagged_deck.inner.members.resolve(&self.card_registry).len()
             )
         }
 

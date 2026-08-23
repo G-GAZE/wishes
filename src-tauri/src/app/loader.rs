@@ -8,15 +8,11 @@ use anyhow::{Context, Result};
 use walkdir::WalkDir;
 use crate::{
     domain::{
-        banner::TaggedBanner,
-        card::TaggedCard,
-        deck::TaggedDeck,
-        logic::definition::{
+        banner::TaggedBanner, card::TaggedCard, deck::{EventGroupCondition, TaggedDeck}, logic::definition::{
             LogicVariant,
             TaggedLogicDefinition
         }
-    },
-    infrastructure::registry::{
+    }, infrastructure::registry::{
         BannerRegistry,
         CardRegistry,
         DeckRegistry,
@@ -98,21 +94,44 @@ impl Loader {
                 anyhow::bail!("重复声明的 Deck Id `{}` - file: {}", id.0, path.display())
             }
 
-            for &card_id in &tagged_deck.inner.members {        // 检查 members
-                if !card_registry.contains(card_id) {
-                    anyhow::bail!(
-                        "Deck {} 的 members 中引用了未定义的 Card(id: {}) - file: {}",
-                        tagged_deck.inner.id.0, card_id.0, path.display()
-                    );
-                }
-            }
-            for (event_tag, group_members) in &tagged_deck.inner.event_groups {
-                for &card_id in group_members {                 // 检查 event_groups
-                    if !card_registry.contains(card_id) {
-                        anyhow::bail!(
-                            "Deck {} 的 Event Group {:?} 引用了未定义的 Card(id: {}) - file: {}", 
-                            tagged_deck.inner.id.0, event_tag, card_id.0, path.display()
-                        );
+            // Deck.members 现在改为动态规则, 自动过滤不存在 Id
+            // 故无需检查 CardId 是否存在
+            // for &card_id in &tagged_deck.inner.members {        // 检查 members
+            //     if !card_registry.contains(card_id) {
+            //         anyhow::bail!(
+            //             "Deck {} 的 members 中引用了未定义的 Card(id: {}) - file: {}",
+            //             tagged_deck.inner.id.0, card_id.0, path.display()
+            //         );
+            //     }
+            // }
+            
+            for (event_tag, group) in &tagged_deck.inner.event_groups {
+                for cond in &group.conditions {
+                    match cond {
+                        EventGroupCondition::IncludeIds { ids } => {
+                            for &card_id in ids {
+                                if !card_registry.contains(card_id) {
+                                    anyhow::bail!(
+                                        "Deck {} 的 EventGroup {:?} 的 IncludeIds 引用了未定义的 Card(id: {}) - file: {}", 
+                                        tagged_deck.inner.id.0, event_tag, card_id.0, path.display()
+                                    );
+                                }
+                                // if !tagged_deck.inner.members.contains(&card_id) {
+                                //     anyhow::bail!(
+                                //         "Deck {} 的 EventGroup {:?} 的 IncludeIds 引用了不在 members 中的 Card({}) - file: {}",
+                                //         tagged_deck.inner.id.0, event_tag, card_id.0, path.display()
+                                //     )
+                                // }
+                            }
+                        },
+                        EventGroupCondition::ExtendGroups { .. } |
+                        EventGroupCondition::ExcludeGroups { .. } => {
+                            anyhow::bail!(
+                                "Deck {} 的 EventGroup {:?} 使用了未支持的 ExtendGroups/ExcludeGroups - file: {}",
+                                tagged_deck.inner.id.0, event_tag, path.display()
+                            )
+                        }
+                        _ => {},
                     }
                 }
             }

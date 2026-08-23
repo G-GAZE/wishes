@@ -39,9 +39,9 @@ where
         }
     }
 
-    /// 查询同时拥有给定标签集合的所有 Id (交集查询).
+    /// 查询拥有所有给定标签集合的所有 Id (交集查询).
     /// 
-    /// 如果传入的标签集合为空, 返回空集.
+    /// 若 `tags` 为空, 返回空集.
     pub fn query(&self, tags: &[Tag]) -> HashSet<Id> {
         let mut iter = tags.iter();
         if let Some(first) = iter.next() {
@@ -60,6 +60,19 @@ where
         } else {
             HashSet::new()
         }
+    }
+
+    /// 查询拥有任意一个给定标签的所有 Id (并集查询).
+    /// 
+    /// 若 `tags` 为空, 返回空集.
+    pub fn query_any(&self, tags: &[Tag]) -> HashSet<Id> {
+        let mut result = HashSet::new();
+        for tag in tags {
+            if let Some(entry) = self.tag_to_ids.get(tag) {
+                result.extend(entry.value().iter().copied());
+            }
+        }
+        result
     }
 
     /// 返回索引中所有的 Id 集合.
