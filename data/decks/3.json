@@ -1,6 +1,6 @@
 {
-    "id": 2,
-    "name": "崩坏星穹铁道火花 UP 卡池",
+    "id": 3,
+    "name": "崩坏星穹铁道遐蝶 UP 卡组",
     "members": {
         "conditions": [
             {
@@ -17,7 +17,7 @@
                     { "namespace": "rarity", "value": "4" }
                 ]
             },
-            { "type": "include_ids", "ids": [ 66, 67, 68, 69, 71, 74, 75, 73 ] }
+            { "type": "include_ids", "ids": [ 66, 67, 68, 69, 71, 74, 75, 76 ] }
         ]
     },
     "event_groups": {
@@ -25,7 +25,7 @@
             "conditions": [
                 {
                     "type": "include_ids",
-                    "ids": [ 50, 51, 59, 73 ]
+                    "ids": [ 45, 47, 54, 76 ]
                 }
             ]
         },
@@ -34,7 +34,7 @@
                 { "type": "all" },
                 {
                     "type": "exclude_ids",
-                    "ids": [ 50, 51, 59, 73 ]
+                    "ids": [ 45, 47, 54, 76 ]
                 }
             ]
         }
