@@ -32,7 +32,7 @@ export function useCardManager() {
       cards.value = loaded.sort((a, b) => b.id - a.id);   // Id 降序排序
 
     } catch (e) {
-      error.value = `卡片加载失败: ${e}`;
+      error.value = `Card 加载失败: ${e}`;
     } finally {
       loading.value = false;
     }
@@ -46,7 +46,7 @@ export function useCardManager() {
       cards.value.unshift(newCard);
       return newCard;
     } catch (e) {
-      error.value = `创建卡片失败: ${e}`;
+      error.value = `创建 Card 失败: ${e}`;
       return null;
     } finally {
       loading.value = false;
@@ -64,7 +64,7 @@ export function useCardManager() {
       }
       return updated;
     } catch (e) {
-      error.value = `更新卡片失败: ${e}`;
+      error.value = `更新 Card 失败: ${e}`;
       return null;
     } finally {
       loading.value = false;
@@ -79,7 +79,7 @@ export function useCardManager() {
       cards.value = cards.value.filter(c => c.id !== id);
       return true;
     } catch (e) {
-      error.value = `删除卡片失败: ${e}`;
+      error.value = `删除 Card 失败: ${e}`;
       return false;
     } finally {
       loading.value = false;

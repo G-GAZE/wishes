@@ -7,6 +7,11 @@ export interface Tag {
 }
 
 /**
+ * EventTag 为 string 的活动标签语义化别名
+ */
+export type EventTag = string;
+
+/**
  * 单次抽卡响应, 包含卡片内容和标签信息
  */
 export interface WishResponse {

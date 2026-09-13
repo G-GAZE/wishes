@@ -7,6 +7,7 @@ import CardForm from '../CardForm.vue';
 import { useTagStyles } from '../../composables/useTagStyles.ts';
 
 const {
+  cards,
   loading,
   error,
   searchQuery,
@@ -203,7 +204,7 @@ const selectedCardTagClasses = computed(() => {
           class="search-input"
         />
         <div class="filtered-card-counter">
-          总数 {{ finalFilteredCards.length }}
+          总数 {{ finalFilteredCards.length }} / {{ cards.length }}
         </div>
         <div class="filter-tags" @click="showTagFilterPopup = !showTagFilterPopup">
           <span v-if="selectedFilterTags.length === 0" class="filter-placeholder">筛选标签</span>
@@ -676,7 +677,7 @@ const selectedCardTagClasses = computed(() => {
 }
 .card-tags-preview .tag {
   background: rgba(255,255,255,0.06);
-  padding: 0 8px;
+  padding: 1px 8px;
   border-radius: 10px;
   font-size: 1rem;
   color: #8a99b4;
