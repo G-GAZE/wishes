@@ -139,7 +139,7 @@ pub enum EventGroupCondition {
 
     /// 暂不支持
     #[serde(rename = "include_groups")]
-    ExtendGroups{ groups: Vec<EventTag> },
+    IncludeGroups{ groups: Vec<EventTag> },
 
     /// 暂不支持
     #[serde(rename = "exclude_groups")]
@@ -195,7 +195,7 @@ impl EventGroup {
                         result.extend(ids.iter().filter(|id| members.contains(id)).copied());
                     }
                 },
-                EventGroupCondition::ExtendGroups { .. } | EventGroupCondition::ExcludeGroups { .. } => {
+                EventGroupCondition::IncludeGroups { .. } | EventGroupCondition::ExcludeGroups { .. } => {
                     // TODO[2026-08-18]: 未来实现包含/排除其他活动标签组, 并处理循环依赖
                     unimplemented!("IncludeGroups 和 ExcludeGroups 筛选条件当前不支持")
                 },

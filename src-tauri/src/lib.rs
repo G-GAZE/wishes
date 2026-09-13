@@ -10,9 +10,37 @@ pub mod utils;
 use tauri::{Manager, State};
 use anyhow::{Context, Result};
 use crate::{
-    app::state::AppState, domain::{ids::{BannerId, CardId}, tag::Tag}, interface::{
-        banner_info::{BannerInfo, BannerSummary}, card_response::{CardCreateRequest, CardSummary, CardUpdateRequest}, catalog_stats::CatalogStats, wish_response::WishResponse
-    }, utils::path::get_or_create_data_dir
+    app::state::AppState,
+    domain::{
+        ids::{
+            BannerId,
+            CardId,
+            DeckId
+        },
+        tag::Tag
+    },
+    interface::{
+        banner_info::{
+            BannerInfo,
+            BannerSummary
+        },
+        card_response::{
+            CardCreateRequest,
+            CardSummary,
+            CardUpdateRequest
+        },
+        catalog_stats::CatalogStats,
+        deck_response::{
+            CreateDeckRequest,
+            DeckSummary,
+            UpdateDeckRequest
+        },
+        wish_response::WishResponse
+    },
+    utils::path::{
+        get_or_create_data_dir,
+        get_or_create_db_dir
+    }
 };
 
 /// 执行单次抽卡
@@ -109,6 +137,51 @@ fn delete_card(id: u64, state: State<AppState>) -> Result<(), String> {
     Ok(())
 }
 
+/// 获取所有卡组信息.
+#[tauri::command]
+fn list_decks(state: State<AppState>) -> Result<Vec<DeckSummary>, String> {
+    let decks = state.deck_manager.list_all();
+    Ok(decks.iter().map(|d| DeckSummary::from(d.as_ref())).collect())
+}
+
+/// 获取根据标签筛选后的卡片的信息.
+#[tauri::command]
+fn list_decks_by_tags(tags: Vec<Tag>, state: State<AppState>) -> Result<Vec<DeckSummary>, String> {
+    let decks = state.deck_manager.list_by_tags(&tags);
+    Ok(decks.iter().map(|d| DeckSummary::from(d.as_ref())).collect())
+}
+
+/// 创建新卡组.
+#[tauri::command]
+fn create_deck(req: CreateDeckRequest, state: State<AppState>) -> Result<DeckSummary, String> {
+    let deck = state.deck_manager.create_deck(req.name, req.members, req.event_groups, req.tags)
+        .map_err(|e| e.to_string())?;
+    Ok(DeckSummary::from(&deck))
+}
+
+
+/// 更新卡组.
+#[tauri::command]
+fn update_deck(req: UpdateDeckRequest, state: State<AppState>) -> Result<DeckSummary, String> {
+    let id = DeckId(req.id);
+    let deck = state.deck_manager.update_deck(
+        id,
+        req.name,
+        req.members,
+        req.event_groups,
+        req.tags
+    ).map_err(|e| e.to_string())?;
+    Ok(DeckSummary::from(&deck))
+}
+
+/// 删除卡组.
+#[tauri::command]
+fn delete_deck(id: u64, state: State<AppState>) -> Result<(), String> {
+    let id = DeckId(id);
+    state.deck_manager.delete_deck(id).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 /// `Tauri` 应用启动入口.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -128,8 +201,10 @@ pub fn run() {
             let handle = app.handle();
             let data_dir = get_or_create_data_dir(&handle)
                 .with_context(|| "获取数据目录失败")?;
+            let db_dir = get_or_create_db_dir(&handle)
+                .with_context(|| "获取数据库目录失败")?;
             
-            let app_state = AppState::load(&data_dir).map_err(|e| {
+            let app_state = AppState::load(&data_dir, &db_dir).map_err(|e| {
                 tracing::error!("Wishes 启动失败");
                 for cause in e.chain() {
                     tracing::error!("- {}", cause);
@@ -151,6 +226,11 @@ pub fn run() {
             create_card,
             update_card,
             delete_card,
+            list_decks,
+            list_decks_by_tags,
+            create_deck,
+            update_deck,
+            delete_deck,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Wishes");

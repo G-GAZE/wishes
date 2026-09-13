@@ -4,7 +4,7 @@
 //! 每个注册器均内建标签索引以支持快速标签查询.
 //! 所有存储均采用并发安全的 `DashMap` 和 `Arc`.
 
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::HashSet, path::PathBuf, sync::Arc};
 use dashmap::DashMap;
 use parking_lot::Mutex;
 use super::{tag_index::TagIndex};
@@ -127,6 +127,8 @@ pub struct DeckRegistry {
     storage: DashMap<DeckId, Arc<TaggedDeck>>,
     /// 标签索引.
     pub tag_index: TagIndex<DeckId>,
+    paths: DashMap<DeckId, PathBuf>,
+    allocator: IdAllocator<DeckId>,
 }
 
 impl DeckRegistry {
@@ -135,7 +137,17 @@ impl DeckRegistry {
         Self {
             storage: DashMap::new(),
             tag_index: TagIndex::new(),
+            paths: DashMap::new(),
+            allocator: IdAllocator::new(),
         }
+    }
+
+    pub fn allocate_id(&self) -> DeckId {
+        self.allocator.allocate()
+    }
+
+    pub fn reset_id(&self, max_id: u64) {
+        self.allocator.reset(max_id);
     }
 
     /// 检查指定 Id 的卡组是否存在.
@@ -145,7 +157,26 @@ impl DeckRegistry {
 
     /// 插入一个卡组.
     pub fn insert(&self, deck: TaggedDeck) {
+        let tags: Vec<Tag> = deck.tags.iter().cloned().collect();
+        self.tag_index.insert(deck.inner.id, &tags);
         self.storage.insert(deck.inner.id, Arc::new(deck));
+    }
+
+    pub fn insert_path(&self, id: DeckId, path: PathBuf) {
+        self.paths.insert(id, path);
+    }
+
+    pub fn remove(&self, id: DeckId) {
+        if let Some(entry) = self.storage.remove(&id) {
+            let tags = entry.1.tags.clone();
+            for tag in tags {
+                self.tag_index.remove(id, &tag);
+            }
+        }
+    }
+
+    pub fn remove_path(&self, id: DeckId) {
+        self.paths.remove(&id);
     }
 
     /// 通过 Id 获取卡组的一个 `Arc` 引用.
@@ -153,9 +184,17 @@ impl DeckRegistry {
         self.storage.get(&id).map(|entry| entry.clone())
     }
 
+    pub fn get_path(&self, id: DeckId) -> Option<PathBuf> {
+        self.paths.get(&id).map(|p| p.clone())
+    }
+
     /// 返回卡组总数.
     pub fn count(&self) -> usize {
         self.storage.len()
+    }
+
+    pub fn all_decks(&self) -> Vec<Arc<TaggedDeck>> {
+        self.storage.iter().map(|entry| entry.value().clone()).collect()
     }
 }
 
@@ -170,6 +209,8 @@ pub struct BannerRegistry {
     storage: DashMap<BannerId, Arc<Mutex<TaggedBanner>>>,
     /// 标签索引.
     pub tag_index: TagIndex<BannerId>,
+    deck_to_banners: DashMap<DeckId, HashSet<BannerId>>,
+    // TODO: 增加 logic_to_banners 反向索引
 }
 
 impl BannerRegistry {
@@ -178,6 +219,7 @@ impl BannerRegistry {
         Self {
             storage: DashMap::new(),
             tag_index: TagIndex::new(),
+            deck_to_banners: DashMap::new(),
         }
     }
 
@@ -188,7 +230,36 @@ impl BannerRegistry {
 
     /// 插入一个新卡池.
     pub fn insert(&self, banner: TaggedBanner) {
+        self.deck_to_banners
+            .entry(banner.deck_id)
+            .or_insert_with(HashSet::new)
+            .insert(banner.id);
         self.storage.insert(banner.inner.id, Arc::new(Mutex::new(banner)));
+    }
+
+    pub fn remove(&self, id: BannerId) -> Option<Arc<Mutex<TaggedBanner>>> {
+        if let Some(banner_arc) = self.storage.remove(&id) {
+            if let Some(banner) = banner_arc.1.try_lock() {
+                let deck_id = banner.deck_id;
+                if let Some(mut entry) = self.deck_to_banners.get_mut(&deck_id) {
+                    entry.remove(&id);
+                    if entry.is_empty() {
+                        drop(entry);
+                        self.deck_to_banners.remove(&deck_id);
+                    }
+                }
+            }
+            Some(banner_arc.1)
+        } else {
+            None
+        }
+    }
+
+    pub fn find_banners_by_deck(&self, deck_id: DeckId) -> Vec<BannerId> {
+        self.deck_to_banners
+            .get(&deck_id)
+            .map(|entry| entry.value().iter().copied().collect())
+            .unwrap_or_default()
     }
 
     /// 通过 Id 获取卡池的 `Arc<Mutex<_>>` 引用.

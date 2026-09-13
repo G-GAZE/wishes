@@ -103,14 +103,29 @@ impl BannerService {
         );
 
         if candidates.is_empty() {
+            let member_count = tagged_deck.members.resolve(&self.card_registry).len();
+            tracing::error!(
+                banner_id = %tagged_banner.id.0,
+                deck_id = %tagged_deck.id.0,
+                logic_id = %tagged_banner.logic_instance.logic_id.0,
+                tags = ?result.tags,
+                event_tags = ?result.event_tags,
+                member_count = %member_count,
+                "Deck {} 没有 Logic {} 匹配 Tag {:?} 和 EventTag {:?} 的 Card, 当前 Deck 成员数量: {}",
+                tagged_deck.inner.id.0,
+                tagged_banner.inner.logic_instance.logic_id.0,
+                result.tags,
+                result.event_tags,
+                member_count,
+            );
             anyhow::bail!(
                 "Deck {} 没有 Logic {} 匹配 Tag {:?} 和 EventTag {:?} 的 Card, 当前 Deck 成员数量: {}",
                 tagged_deck.inner.id.0,
                 tagged_banner.inner.logic_instance.logic_id.0,
                 result.tags,
                 result.event_tags,
-                tagged_deck.inner.members.resolve(&self.card_registry).len()
-            )
+                member_count,
+            );
         }
 
         let picked_id = candidates.choose(&mut rng)
