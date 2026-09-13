@@ -11,6 +11,7 @@
 
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
+use std::ops::Deref;
 use serde::{Serialize, Deserialize};
 
 
@@ -220,5 +221,12 @@ impl<T> Tagged<T> {
     /// 获取标签迭代器.
     pub fn iter_tags(&self) -> impl Iterator<Item = &Tag> {
         self.tags.iter()
+    }
+}
+
+impl<T> Deref for Tagged<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
     }
 }

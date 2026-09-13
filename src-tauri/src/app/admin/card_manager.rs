@@ -85,8 +85,8 @@ impl CardManager {
         // 获取旧卡片信息
         let ord_card = self.registry.get(id)
             .ok_or_else(|| anyhow::anyhow!("Card {} 不存在", id.0))?;
-        let old_path = self.registry.get_path(id)
-            .ok_or_else(|| anyhow::anyhow!("Card {} 的存储文件不存在", id.0))?;
+        let old_path_opt = self.registry.get_path(id);
+            // .ok_or_else(|| anyhow::anyhow!("Card {} 的存储文件不存在", id.0))?;
 
         // 构建新卡片
         let mut new_card = ord_card.as_ref().clone();
@@ -104,8 +104,8 @@ impl CardManager {
         self.registry.insert_path(id, new_path.clone());    // DashMap::insert 会自动覆盖原有旧路径
 
         // 删除旧文件
-        if new_path != old_path {
-            if old_path.exists() {
+        if let Some(old_path) = old_path_opt {
+            if new_path != old_path && old_path.exists() {
                 if let Err(e) = fs::remove_file(&old_path) {
                     tracing::warn!(
                         old_path = ?old_path,
@@ -114,6 +114,8 @@ impl CardManager {
                     );
                 }
             }
+        } else {
+            tracing::warn!("Card {} 的旧文件路径未记录, 跳过删除", id.0);
         }
 
         Ok(new_card)

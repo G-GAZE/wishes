@@ -12,7 +12,6 @@ export interface CardCreateRequest {
   tags: Tag[],
 }
 
-
 export interface CardUpdateRequest {
   id: number,
   new_content: string,

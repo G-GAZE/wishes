@@ -12,7 +12,7 @@ import BottomNav from "./components/BottomNav.vue";
 import { useWish } from "./composables/useWish";
 import type { WishResponse } from "./types.ts";
 import WishResultOverlay from "./components/WishResultOverlay.vue";
-
+import { GlobalThemeOverrides, NConfigProvider, darkTheme, NDialogProvider } from "naive-ui";
 
 const {
   banners,
@@ -131,53 +131,95 @@ const currentPageComponent = computed(() => pageMap[currentPage.value]);
 function navigateTo(page: string) {
   currentPage.value = page;
 }
+
+
+const themeOverrides: GlobalThemeOverrides = {
+  common: {
+    primaryColor: '#007bff',
+    primaryColorHover: '#3d9bff',
+    primaryColorPressed: '#0066d6',
+    borderRadius: '6px',
+    bodyColor: '#121316',
+    cardColor: '#1a212b',
+    borderColor: '#2a3340',
+    textColorBase: '#e4e8ef',
+    textColor2: '#b0c0d0',
+    textColor3: '#6a7a90',
+    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+  },
+  Select: {
+    peers: {
+      InternalSelection: {
+        color: 'rgba(11, 14, 20, 0.6)',
+        colorActive: 'rgba(11, 14, 20, 0.6)',
+        border: '1px solid #2a3340',
+        borderActive: '1px solid #007bff',
+        borderHover: '1px solid #4f6ef7',
+        borderFocus: '1px solid #007bff',
+        textColor: '#b0c0d0',
+        // textColorActive: '#fff',
+      },
+      InternalSelectMenu: {
+        color: '#1a212b',
+        optionTextColor: '#e4e8ef',
+        optionTextColorActive: '#fff',
+        optionColorPending: 'rgba(79, 110, 247, 0.15)',
+        optionColorActive: 'rgba(79, 110, 247, 0.25)',
+      },
+    },
+  },
+};
 </script>
 
 
 <template>
-  <div id="app">
-    <div class="app-title">Wishes 众愿</div>
-    <header :class="{ expanded:  isGachaPage }">
-      <div class="header-content">
-        <div v-if="isGachaPage" class="banner-tabs">
-          <div
-            v-for="b in banners"
-            :key="b.id"
-            class="banner-tab"
-            :class="{ active: selectedBannerId === b.id }"
-            @click="onBannerChanged(b.id)"
-          >
-            {{ b.name }}
+  <n-config-provider :theme="darkTheme" :theme-overrides="themeOverrides">
+    <n-dialog-provider>
+      <div id="app">
+        <div class="app-title">Wishes 众愿</div>
+        <header :class="{ expanded:  isGachaPage }">
+          <div class="header-content">
+            <div v-if="isGachaPage" class="banner-tabs">
+              <div
+                v-for="b in banners"
+                :key="b.id"
+                class="banner-tab"
+                :class="{ active: selectedBannerId === b.id }"
+                @click="onBannerChanged(b.id)"
+              >
+                {{ b.name }}
+              </div>
+            </div>
           </div>
+        </header>
+
+        <div class="page-container">
+          <Transition name="slide" mode="out-in">
+            <component
+              :is="currentPageComponent"
+              :key="currentPage"
+              @select-banner="onSelectBanner"
+              :banner-id="selectedBannerId"
+              :banner-info="currentBannerInfo"
+              :banners="banners"
+              @wish-single="handleWishSingle"
+              @wish-ten="handleWishTen"
+            />
+          </Transition>
         </div>
-      </div>
-    </header>
 
-    <div class="page-container">
-      <Transition name="slide" mode="out-in">
-        <component
-          :is="currentPageComponent"
-          :key="currentPage"
-          @select-banner="onSelectBanner"
-          :banner-id="selectedBannerId"
-          :banner-info="currentBannerInfo"
-          :banners="banners"
-          @wish-single="handleWishSingle"
-          @wish-ten="handleWishTen"
+        <BottomNav v-model="currentPage"/>
+
+        <WishResultOverlay
+          v-if="showWishResultOverlay"
+          :result="currentWish"
+          :is-ten-wish="isTenWish"
+          :ten-results="tenWishResults"
+          @close="closeResultOverlay"
         />
-      </Transition>
-    </div>
-
-    <BottomNav v-model="currentPage"/>
-
-    <WishResultOverlay
-      v-if="showWishResultOverlay"
-      :result="currentWish"
-      :is-ten-wish="isTenWish"
-      :ten-results="tenWishResults"
-      @close="closeResultOverlay"
-    />
-  </div>
+      </div>
+    </n-dialog-provider>
+  </n-config-provider>
 </template>
 
 

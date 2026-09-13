@@ -74,9 +74,10 @@ impl Loader {
     /// 
     /// # 校验
     /// - 卡组 Id 唯一.
-    /// - 卡组中引用的卡片存在于 `card_registry` 注册器中.
-    pub fn load_decks_from_dir(&self, dir_path: &Path, card_registry: &CardRegistry) -> Result<DeckRegistry> {
+    /// - 不会检查引用的卡片是否存在, 因为 members 和 event_groups 动态计算时自动过滤不存在卡片
+    pub fn load_decks_from_dir(&self, dir_path: &Path) -> Result<DeckRegistry> {
         let deck_registry = DeckRegistry::new();
+        let mut max_id = 0;
 
         for entry in WalkDir::new(dir_path)
             .into_iter()
@@ -94,40 +95,33 @@ impl Loader {
                 anyhow::bail!("重复声明的 Deck Id `{}` - file: {}", id.0, path.display())
             }
 
+            if id.0 > max_id {
+                max_id = id.0;
+            }
+
             // Deck.members 现在改为动态规则, 自动过滤不存在 Id
             // 故无需检查 CardId 是否存在
-            // for &card_id in &tagged_deck.inner.members {        // 检查 members
-            //     if !card_registry.contains(card_id) {
-            //         anyhow::bail!(
-            //             "Deck {} 的 members 中引用了未定义的 Card(id: {}) - file: {}",
-            //             tagged_deck.inner.id.0, card_id.0, path.display()
-            //         );
-            //     }
-            // }
             
             for (event_tag, group) in &tagged_deck.inner.event_groups {
                 for cond in &group.conditions {
+                    // 此处的检查在 IncludeGroups 和 ExcludeGroups 实现后是不需要的
                     match cond {
-                        EventGroupCondition::IncludeIds { ids } => {
-                            for &card_id in ids {
-                                if !card_registry.contains(card_id) {
-                                    anyhow::bail!(
-                                        "Deck {} 的 EventGroup {:?} 的 IncludeIds 引用了未定义的 Card(id: {}) - file: {}", 
-                                        tagged_deck.inner.id.0, event_tag, card_id.0, path.display()
-                                    );
-                                }
-                                // if !tagged_deck.inner.members.contains(&card_id) {
-                                //     anyhow::bail!(
-                                //         "Deck {} 的 EventGroup {:?} 的 IncludeIds 引用了不在 members 中的 Card({}) - file: {}",
-                                //         tagged_deck.inner.id.0, event_tag, card_id.0, path.display()
-                                //     )
-                                // }
-                            }
-                        },
-                        EventGroupCondition::ExtendGroups { .. } |
+                        // IncludeIds 执行时会与 Deck::members 取交集, 自动过滤不存在 id
+                        // 故这里不需要检查
+                        // EventGroupCondition::IncludeIds { ids } => {
+                        //     for &card_id in ids {
+                        //         if !card_registry.contains(card_id) {
+                        //             anyhow::bail!(
+                        //                 "Deck {} 的 EventGroup {:?} 的 IncludeIds 引用了未定义的 Card(id: {}) - file: {}", 
+                        //                 tagged_deck.inner.id.0, event_tag, card_id.0, path.display()
+                        //             );
+                        //         }
+                        //     }
+                        // },
+                        EventGroupCondition::IncludeGroups { .. } |
                         EventGroupCondition::ExcludeGroups { .. } => {
                             anyhow::bail!(
-                                "Deck {} 的 EventGroup {:?} 使用了未支持的 ExtendGroups/ExcludeGroups - file: {}",
+                                "Deck {} 的 EventGroup {:?} 使用了未支持的 IncludeGroups/ExcludeGroups - file: {}",
                                 tagged_deck.inner.id.0, event_tag, path.display()
                             )
                         }
@@ -139,9 +133,11 @@ impl Loader {
             let tags: Vec<_> = tagged_deck.tags.iter().cloned().collect();
             deck_registry.tag_index.insert(id, &tags);
             deck_registry.insert(tagged_deck);
-            // TODO: 添加路径
+            deck_registry.insert_path(id, path.to_path_buf());
             
         }
+
+        deck_registry.reset_id(max_id);
 
         Ok(deck_registry)
     }

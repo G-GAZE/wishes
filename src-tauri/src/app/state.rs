@@ -8,7 +8,7 @@ use std::{path::{Path, PathBuf}, sync::Arc};
 use anyhow::{Ok, Result};
 use crate::{
     app::{
-        admin::card_manager::CardManager, banner_service::BannerService, logic_engine::LogicEngine
+        admin::{card_manager::CardManager, deck_manager::DeckManager}, banner_service::BannerService, logic_engine::LogicEngine
     }, domain::{
         ids::BannerId,
         wish_result::WishResult
@@ -39,6 +39,8 @@ pub struct AppState {
 
     /// 卡片管理器实例.
     pub card_manager: CardManager,
+    /// 卡组管理器实例.
+    pub deck_manager: DeckManager,
 
     /// 逻辑引擎引用.
     pub logic_engine: Arc<LogicEngine>,
@@ -61,15 +63,14 @@ impl AppState {
     /// 
     /// # 错误
     /// 任何加载或初始化步骤失败都将返回错误.
-    pub fn load(data_dir: &Path) -> Result<Self> {
+    pub fn load(data_dir: &Path, db_dir: &Path) -> Result<Self> {
         let loader = Loader::new();
 
         let card_registry = loader.load_cards_from_dir(&data_dir.join("cards"))?;
         println!("OK - 已加载 {} 个 Card", card_registry.count());
 
         let deck_registry = loader.load_decks_from_dir(
-            &data_dir.join("decks"),
-            &card_registry
+            &data_dir.join("decks")
         )?;
         println!("OK - 已加载 {} 个 Deck", deck_registry.count());
 
@@ -96,12 +97,19 @@ impl AppState {
 
         // 初始化管理器
         let card_manager = CardManager::new(card_registry.clone(), data_dir.join("cards"));
+        let deck_manager = DeckManager::new(
+            deck_registry.clone(),
+            card_registry.clone(),
+            banner_registry.clone(),
+            logic_registry.clone(),
+            data_dir.join("decks")
+        );
         
         // 初始化逻辑执行引擎
         let logic_engine = Arc::new(LogicEngine::new(logic_registry.clone()));
 
         // 连接逻辑状态数据库
-        let state_repository = Arc::new(StateRepository::new(&data_dir.join("states.db"))?);
+        let state_repository = Arc::new(StateRepository::new(&db_dir.join("states.db"))?);
 
         let banner_service = BannerService::new(
             card_registry.clone(),
@@ -120,6 +128,7 @@ impl AppState {
             logic_registry,
             banner_registry,
             card_manager,
+            deck_manager,
             logic_engine,
             banner_service,
             data_dir: data_dir.to_path_buf(),
