@@ -67,19 +67,19 @@ impl AppState {
         let loader = Loader::new();
 
         let card_registry = loader.load_cards_from_dir(&data_dir.join("cards"))?;
-        println!("OK - 已加载 {} 个 Card", card_registry.count());
+        tracing::info!(count = card_registry.count(), "已加载 Card", );
 
         let deck_registry = loader.load_decks_from_dir(
             &data_dir.join("decks")
         )?;
-        println!("OK - 已加载 {} 个 Deck", deck_registry.count());
+        tracing::info!(count = deck_registry.count(), "已加载 Deck");
 
         let mut logic_registry = LogicRegistry::new();
         loader.load_logics_from_dir(
             &data_dir.join("logics"),
             &mut logic_registry
         )?;
-        println!("OK - 已加载 {} 个 Logic 定义", logic_registry.count_definitions());
+        tracing::info!(count = logic_registry.count_definitions(), "已加载 Logic 定义");
 
         let banner_registry = loader.load_banner_from_dir(
             &data_dir.join("banners"),
@@ -87,7 +87,7 @@ impl AppState {
             &deck_registry,
             &logic_registry
         )?;
-        println!("OK - 已加载 {} 个 Banner", banner_registry.count());
+        tracing::info!(count = banner_registry.count(), "已加载 Banner");
         
         // 转为 Arc 指针
         let card_registry = Arc::new(card_registry);

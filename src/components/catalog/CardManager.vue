@@ -5,6 +5,7 @@ import { CardCreateRequest, CardSummary, CardUpdateRequest } from '../../api/car
 import { Tag } from '../../types';
 import CardForm from '../CardForm.vue';
 import { useTagStyles } from '../../composables/useTagStyles.ts';
+import { useMessage } from 'naive-ui';
 
 const {
   cards,
@@ -18,6 +19,8 @@ const {
   update,
   remove
 } = useCardManager();
+
+const message = useMessage();
 
 // 选中卡片
 const selectedCard = ref<CardSummary | null>(null);
@@ -158,12 +161,14 @@ function closeDeleteConfirm() {
 async function handleDelete() {
   if (deletingCard.value) {
     const success = await remove(deletingCard.value.id);
-    if (success) {
-      if (selectedCard.value?.id === deletingCard.value.id) {
-        clearSelected();
-      }
-      closeDeleteConfirm();
+    if (!success) {
+      message.error(error.value ?? '删除卡片失败');
+      return;
     }
+    if (selectedCard.value?.id === deletingCard.value.id) {
+      clearSelected();
+    }
+    closeDeleteConfirm();
   }
 }
 

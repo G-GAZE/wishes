@@ -12,7 +12,7 @@ import BottomNav from "./components/BottomNav.vue";
 import { useWish } from "./composables/useWish";
 import type { WishResponse } from "./types.ts";
 import WishResultOverlay from "./components/WishResultOverlay.vue";
-import { GlobalThemeOverrides, NConfigProvider, darkTheme, NDialogProvider } from "naive-ui";
+import { GlobalThemeOverrides, NConfigProvider, darkTheme, NDialogProvider, NMessageProvider } from "naive-ui";
 
 const {
   banners,
@@ -175,49 +175,51 @@ const themeOverrides: GlobalThemeOverrides = {
 <template>
   <n-config-provider :theme="darkTheme" :theme-overrides="themeOverrides">
     <n-dialog-provider>
-      <div id="app">
-        <div class="app-title">Wishes 众愿</div>
-        <header :class="{ expanded:  isGachaPage }">
-          <div class="header-content">
-            <div v-if="isGachaPage" class="banner-tabs">
-              <div
-                v-for="b in banners"
-                :key="b.id"
-                class="banner-tab"
-                :class="{ active: selectedBannerId === b.id }"
-                @click="onBannerChanged(b.id)"
-              >
-                {{ b.name }}
+      <n-message-provider>
+        <div id="app">
+          <div class="app-title">Wishes 众愿</div>
+          <header :class="{ expanded:  isGachaPage }">
+            <div class="header-content">
+              <div v-if="isGachaPage" class="banner-tabs">
+                <div
+                  v-for="b in banners"
+                  :key="b.id"
+                  class="banner-tab"
+                  :class="{ active: selectedBannerId === b.id }"
+                  @click="onBannerChanged(b.id)"
+                >
+                  {{ b.name }}
+                </div>
               </div>
             </div>
+          </header>
+
+          <div class="page-container">
+            <Transition name="slide" mode="out-in">
+              <component
+                :is="currentPageComponent"
+                :key="currentPage"
+                @select-banner="onSelectBanner"
+                :banner-id="selectedBannerId"
+                :banner-info="currentBannerInfo"
+                :banners="banners"
+                @wish-single="handleWishSingle"
+                @wish-ten="handleWishTen"
+              />
+            </Transition>
           </div>
-        </header>
 
-        <div class="page-container">
-          <Transition name="slide" mode="out-in">
-            <component
-              :is="currentPageComponent"
-              :key="currentPage"
-              @select-banner="onSelectBanner"
-              :banner-id="selectedBannerId"
-              :banner-info="currentBannerInfo"
-              :banners="banners"
-              @wish-single="handleWishSingle"
-              @wish-ten="handleWishTen"
-            />
-          </Transition>
+          <BottomNav v-model="currentPage"/>
+
+          <WishResultOverlay
+            v-if="showWishResultOverlay"
+            :result="currentWish"
+            :is-ten-wish="isTenWish"
+            :ten-results="tenWishResults"
+            @close="closeResultOverlay"
+          />
         </div>
-
-        <BottomNav v-model="currentPage"/>
-
-        <WishResultOverlay
-          v-if="showWishResultOverlay"
-          :result="currentWish"
-          :is-ten-wish="isTenWish"
-          :ten-results="tenWishResults"
-          @close="closeResultOverlay"
-        />
-      </div>
+      </n-message-provider>
     </n-dialog-provider>
   </n-config-provider>
 </template>

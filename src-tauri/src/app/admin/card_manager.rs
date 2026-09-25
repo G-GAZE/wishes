@@ -63,6 +63,8 @@ impl CardManager {
         self.registry.insert(tagged_card.clone());
         self.registry.insert_path(id, file_path);
 
+        tracing::info!(card_id = %id.0, "创建 Card");
+
         Ok(tagged_card)
     }
 
@@ -117,6 +119,8 @@ impl CardManager {
             tracing::warn!("Card {} 的旧文件路径未记录, 跳过删除", id.0);
         }
 
+        tracing::info!(card_id = %id.0, "修改 Card");
+
         Ok(new_card)
     }
 
@@ -138,6 +142,8 @@ impl CardManager {
 
         self.registry.remove(id);
         self.registry.remove_path(id);
+
+        tracing::info!(card_id = %id.0, "删除 Card");
 
         Ok(())
     }

@@ -63,6 +63,8 @@ impl DeckManager {
 
         self.deck_registry.insert(tagged_deck.clone());
         self.deck_registry.insert_path(id, file_path);
+        
+        tracing::info!(deck_id = %id.0, "新建 Deck");
 
         Ok(tagged_deck)
     }
@@ -95,7 +97,13 @@ impl DeckManager {
                 &self.card_registry,
                 &self.logic_registry
             ) {
-                anyhow::bail!("Deck {} 更新后, Banner {} 校验失败: {}", id.0, banner_id.0, e)
+                tracing::warn!(
+                    deck_id = %id.0,
+                    banner_id = %banner_id.0,
+                    error = %e,
+                    "Deck 更新失败, 因为更新后将导致卡池校验失败"
+                );
+                anyhow::bail!("Deck {} 更新失败, 因为更新后将导致 Banner {} 校验失败: {}", id.0, banner_id.0, e)
             }
         }
 
@@ -121,6 +129,8 @@ impl DeckManager {
         } else {
             tracing::warn!("Deck {} 的旧文件路径未记录, 跳过删除", id.0);
         }
+        
+        tracing::info!(deck_id = %id.0, "修改 Deck");
 
         Ok(new_deck)
     }
@@ -128,6 +138,11 @@ impl DeckManager {
     pub fn delete_deck(&self, id: DeckId) -> Result<()> {
         let affected_banners = self.banner_registry.find_banners_by_deck(id);
         if !affected_banners.is_empty() {
+            tracing::warn!(
+                deck_id = %id.0,
+                affected_banners = ?affected_banners.iter().map(|id| id.0).collect::<Vec<_>>(),
+                "Deck 被 Banner 引用, 无法删除"
+            );
             anyhow::bail!("Deck {} 被下列 Banner {:?} 引用, 无法删除", id.0, affected_banners);
         }
 
@@ -140,6 +155,8 @@ impl DeckManager {
 
         self.deck_registry.remove(id);
         self.deck_registry.remove_path(id);
+        
+        tracing::info!(deck_id = %id.0, "删除 Deck");
 
         Ok(())
     }

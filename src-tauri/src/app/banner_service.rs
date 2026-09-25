@@ -161,6 +161,16 @@ impl BannerService {
         let tagged_card = self.card_registry.get(*picked_id)
             .ok_or_else(|| anyhow::anyhow!("未找到 Card: Id `{}`", picked_id.0))?;
 
+        tracing::info!(
+            banner_id = %banner_id.0,
+            card_id = %picked_id.0,
+            total_counter = %state.total_counter,
+            seed = %seed,
+            tags = ?result.tags,
+            event_tags = ?result.event_tags,
+            "正常抽卡"
+        );
+
         Ok(WishResult {
             card: tagged_card,
             event_tags: result.event_tags.iter().cloned().collect(),

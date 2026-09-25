@@ -24,7 +24,7 @@ pub fn get_or_create_data_dir(handle: &AppHandle) -> Result<PathBuf> {
         if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
             let dev_dir = PathBuf::from(manifest_dir).join("../data");
             if dev_dir.exists() && check_data_dir(&dev_dir) {
-                println!("DEV - 使用开发环境数据目录: {:?}", &dev_dir);
+                tracing::info!(data_dir = %dev_dir.display(), "使用开发环境数据目录");
                 return Ok(dev_dir);
             }
         }
@@ -55,6 +55,8 @@ pub fn get_or_create_data_dir(handle: &AppHandle) -> Result<PathBuf> {
         }
     }
 
+    tracing::info!(data_dir = %target.display(), "使用生成环境数据目录");
+
     Ok(target)
 }
 
@@ -74,7 +76,7 @@ pub fn get_or_create_db_dir(handle: &AppHandle) -> Result<PathBuf> {
             if !dev_dir.exists() {
                 fs::create_dir_all(&dev_dir).with_context(|| "创建 db 目录失败")?;
             }
-            println!("DEV - 使用开发环境数据库目录: {:?}", &dev_dir);
+            tracing::info!(db_dir = %dev_dir.display(), "使用开发环境数据库目录");
             return Ok(dev_dir);
         }
     }
@@ -90,7 +92,36 @@ pub fn get_or_create_db_dir(handle: &AppHandle) -> Result<PathBuf> {
         fs::create_dir_all(&target).with_context(|| "创建 db 目录失败")?;
     }
 
+    tracing::info!(db_dir = %target.display(), "使用生成环境数据库目录");
+
     Ok(target)
+}
+
+/// 获取应用日志目录, 若不存在则创建.
+/// 
+/// - dev 构建: 使用项目根目录下的 `logs/`
+/// - release 构建: 使用 `app_log_dir()`
+pub fn get_or_create_log_dir(handle: &AppHandle) -> Result<PathBuf> {
+    #[cfg(debug_assertions)]
+    {
+        if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
+            let dev_dir = PathBuf::from(manifest_dir).join("../logs");
+            if !dev_dir.exists() {
+                fs::create_dir_all(&dev_dir)
+                    .with_context(|| "创建 dev logs 目录失败")?;
+            }
+            return Ok(dev_dir);
+        }
+    }
+
+    let dir = handle
+        .path()
+        .app_log_dir()
+        .with_context(|| "无法获取应用日志目录")?;
+    if !dir.exists() {
+        fs::create_dir_all(&dir).with_context(|| "创建日志目录失败")?;
+    }
+    Ok(dir)
 }
 
 /// 辅助函数, 递归复制整个目录及其内容 (保留原目录结构).
