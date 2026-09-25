@@ -85,7 +85,7 @@ async function openLogDir() {
               <button
                 v-if="log_dir"
                 class="open-btn"
-                :disabled="logDirOpening"
+                :disabled="dataDirOpening"
                 @click="openDataDir"
               >打开</button>
             </span>
