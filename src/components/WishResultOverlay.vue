@@ -172,7 +172,7 @@ const currentTagClasses = computed(() => {
         <div v-if="result.tags.length" class="tags" @click.stop>
           <span
             v-for="(tag, index) in result.tags"
-            :key="tag.namespace" class="tag"
+            :key="`${tag.namespace}:${tag.value}`" class="tag"
             :class="singleTagClasses[index]"
           >
             {{ tag.value }}
@@ -200,7 +200,7 @@ const currentTagClasses = computed(() => {
                 <div v-if="currentCard?.tags.length" class="tags" @click.stop>
                   <span
                     v-for="(tag, index) in currentCard.tags"
-                    :key="tag.namespace"
+                    :key="`${tag.namespace}:${tag.value}`"
                     class="tag"
                     :class="currentTagClasses[index]"
                   >

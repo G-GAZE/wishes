@@ -62,7 +62,7 @@ const resetGlow = () => {
         <div class="banner-tags">
           <span
             v-for="tag in banner.tags"
-            :key="tag.namespace"
+            :key="`${tag.namespace}:${tag.value}`"
             class="tag"
           >
             {{ tag.value }}
