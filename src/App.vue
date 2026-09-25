@@ -328,6 +328,7 @@ header.expanded {
 html {
   font-size: 62.5%;   /* 使 1rem == 10px */
   overflow: hidden;
+  user-select: none;
 }
 
 * {
