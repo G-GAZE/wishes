@@ -31,5 +31,5 @@ pub struct BannerInfo {
     /// 卡池所引用的逻辑定义名称.
     pub logic_name: String,
     /// 该卡池的总抽卡次数 (来自卡池状态中自动维护的总计数器).
-    pub total_counter: u32,
+    pub total_counter: u64,
 }

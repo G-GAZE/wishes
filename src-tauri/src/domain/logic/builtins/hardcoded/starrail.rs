@@ -21,6 +21,7 @@ const TYPE_LIGHT_CONE: &str = "light_cone";
 
 /// 崩坏星穹铁道角色 UP 卡池逻辑状态.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(default)]
 struct StarrailCharacterUpState {
     counter_5: u16,
     counter_4: u16,
@@ -126,7 +127,14 @@ impl HardcodedExecutor for StarrailCharacterUpLogic {
     {
         let current: StarrailCharacterUpState = match serde_json::from_value(state.clone()) {
             Ok(s) => s,
-            Err(_) => StarrailCharacterUpState::default()
+            Err(e) => {
+                tracing::error!(
+                    error = %e,
+                    state = %state,
+                    "StarrailCharacterUpState 反序列化失败, 回退到 Default"
+                );
+                StarrailCharacterUpState::default()
+            }
         };
 
         let (new_state, result) = Self::draw(current, rng);
@@ -141,6 +149,10 @@ impl HardcodedExecutor for StarrailCharacterUpLogic {
             (
                 vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_5), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)],
                 vec![EventTag::up()]
+            ),
+            (
+                vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_5), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)],
+                vec![EventTag::standard()]
             ),
             (
                 vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_4), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)],

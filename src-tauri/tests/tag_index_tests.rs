@@ -36,7 +36,7 @@ fn test_tag_index_query() {
     ];
 
     // 应该只有 3 号卡片
-    let result = index.query(&query_card);
+    let result = index.query_all(&query_card);
     assert_eq!(HashSet::from([3]), result);
 }
 
@@ -87,7 +87,7 @@ fn test_tag_index_empty_query_returns_empty() {
     index.insert(1, &tags_card1);
 
     let query_card = Vec::new();
-    let result = index.query(&query_card);
+    let result = index.query_all(&query_card);
     assert!(result.is_empty());
 }
 
@@ -117,6 +117,6 @@ fn test_tag_index_query_all_ids() {
     ];
     index.insert(3, &tags_card3);
 
-    let result = index.query_all();
+    let result = index.all_ids();
     assert_eq!(HashSet::from([1, 2, 3]), result);
 }

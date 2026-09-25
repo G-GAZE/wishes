@@ -120,7 +120,7 @@ impl AppState {
             state_repository.clone(),
         );
 
-        banner_service.load_banner_state()?;
+        banner_service.restore_states()?;
 
         Ok(Self {
             card_registry,

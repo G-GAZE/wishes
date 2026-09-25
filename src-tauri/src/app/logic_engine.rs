@@ -6,7 +6,7 @@
 use std::sync::Arc;
 use rand::rngs::ChaCha12Rng;
 use serde_json::Value as JsonValue;
-use crate::{domain::{ids::LogicId, logic::{definition::{LogicVariant, RuleType}, error::LogicError, instance::LogicInstance, result::LogicResult}}, infrastructure::registry::LogicRegistry};
+use crate::{domain::{ids::LogicId, logic::{definition::{LogicVariant, RuleType}, error::LogicError, result::LogicResult}}, infrastructure::registry::LogicRegistry};
 
 /// 无状态的逻辑执行引擎.
 /// 
@@ -25,7 +25,7 @@ impl LogicEngine {
     /// 
     /// # 参数
     /// - `logic_id`: 要执行的逻辑定义 Id.
-    /// - `instance`: 可变的逻辑实例, 其 `state` 会被读取和修改.
+    /// - `state`: 卡池逻辑的状态.
     /// - `rng`: 随机数生成器, 用于执行过程中的随机来源.
     /// 
     /// # 返回
@@ -37,20 +37,20 @@ impl LogicEngine {
     /// - 当前无法使用自定义规则.
     pub fn execute(&self,
         logic_id: LogicId,
-        instance: &mut LogicInstance,
+        state: &mut JsonValue,
         rng: &mut ChaCha12Rng
     ) -> Result<LogicResult, LogicError> {
         let tagged_def = self.registry.get_definition(logic_id)
             .ok_or(LogicError::DefinitionNotFound(logic_id))?;
 
-        match &tagged_def.inner.variant {
+        match &tagged_def.variant {
             LogicVariant::Hardcoded { executor_name} => {
                 let executor = self.registry.get_hardcoded_executor(executor_name)
                     .ok_or(LogicError::ExecutorNotFound(executor_name.clone()))?;
-                Ok(executor.execute(&mut instance.state, rng))
+                Ok(executor.execute(state, rng))
             },
-            LogicVariant::RuleBased { rules } => {
-                let mut state_map = match instance.state {
+            LogicVariant::RuleBased { rules } => {      // 本分支暂时不会真正走到
+                let mut state_map = match state {
                     JsonValue::Object(ref map) => map.clone(),
                     _=> serde_json::Map::new()
                 };
@@ -74,6 +74,7 @@ impl LogicEngine {
                     executor.apply(&rule.params, local_state, &mut result, rng);
                 }
 
+                *state = JsonValue::Object(state_map);      // 执行后写回状态
                 Ok(result)
             }
         }

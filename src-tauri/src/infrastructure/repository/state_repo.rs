@@ -5,10 +5,10 @@
 
 use std::path::Path;
 use parking_lot::Mutex;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use rusqlite::{Connection, Error, ToSql, types::{ToSqlOutput, Value as SqlValue}};
 use serde_json::Value as JsonValue;
-use crate::domain::ids::{BannerId, UserId};
+use crate::domain::{ids::{BannerId, UserId}, banner::BannerRuntimeState};
 
 /// 为 `UserId` 实现 `ToSql`, 将其 `u64` 值转为 `i64` 以适配 SQLite 整数.
 /// 
@@ -53,10 +53,11 @@ impl StateRepository {
         conn.execute(
             r#"
                 CREATE TABLE IF NOT EXISTS instance_states (
-                    user_id INTEGER NOT NULL,
-                    banner_id INTEGER NOT NULL,
-                    state_json Text,
-                    PRIMARY KEY (user_id, banner_id)
+                    user_id         INTEGER NOT NULL,
+                    banner_id       INTEGER NOT NULL,
+                    total_counter   INTEGER NOT NULL DEFAULT 0,
+                    logic_state     Text,
+                    PRIMARY KEY     (user_id, banner_id)
                 )
             "#,
             []
@@ -65,30 +66,77 @@ impl StateRepository {
     }
 
     /// 加载指定用户和卡池的状态, 若不存在则返回 `None`.
-    pub fn load(&self, user_id: UserId, banner_id: BannerId) -> Result<Option<JsonValue>> {
+    pub fn load(&self,
+        user_id: UserId,
+        banner_id: BannerId
+    ) -> Result<Option<BannerRuntimeState>> {
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT state_json FROM instance_states WHERE user_id = ?1 AND banner_id = ?2")?;
-        let mut rows = stmt.query(rusqlite::params![user_id, banner_id])?;
+            "SELECT total_counter, logic_state FROM instance_states WHERE user_id = ?1 AND banner_id = ?2"
+        )?;
+        let mut rows = stmt.query(rusqlite::params![user_id, banner_id])?;     
         if let Some(row) = rows.next()? {
-            let state_str: String = row.get(0)?;
-            let state_json: JsonValue = serde_json::from_str(&state_str)?;
-            Ok(Some(state_json))
+            let total_counter_i64: i64 = row.get(0)?;
+            let total_counter = u64::try_from(total_counter_i64)
+                .with_context(|| format!(
+                    "Banner {} 的 total_counter (value {}) 无法转换为 u64",
+                    banner_id.0, total_counter_i64
+                ))?;
+            
+            let logic_state_str: Option<String> = row.get(1)?;
+            let logic_state = match logic_state_str {
+                Some(s) => serde_json::from_str(&s)
+                    .with_context(|| format!(
+                        "Banner {} 的 logic_state 反序列化失败",
+                        banner_id.0
+                    ))?,
+                None => JsonValue::Null,
+            };
+
+            Ok(Some(BannerRuntimeState{
+                total_counter,
+                logic_state,
+            }))
         } else {
             Ok(None)
         }
     }
 
     /// 保存或更新指定用户和卡池的状态, 返回插入/更新后的行 Id (`last_insert_rowid`).
-    pub fn save(&self, user_id: UserId, banner_id: BannerId, state_json: &JsonValue) -> Result<i64> {
+    pub fn save(&self,
+        user_id: UserId,
+        banner_id: BannerId,
+        state: &BannerRuntimeState
+    ) -> Result<()> {
+        let total_counter_i64 = i64::try_from(state.total_counter)
+            .with_context(|| format!(
+                "Banner {} 的 total_counter (value {}) 无法转换为 i64",
+                banner_id.0, state.total_counter
+            ))?;
+        
+        let logic_state_str = if state.logic_state.is_null() {
+            None
+        } else {
+            Some(
+                serde_json::to_string(&state.logic_state)
+                    .with_context(|| format!(
+                        "Banner {} 的 logic_state 序列化为 JSON 文本失败",
+                        banner_id.0
+                    ))?
+            )
+        };
+        
         let conn = self.conn.lock();
         conn.execute(
             r#"
-                INSERT INTO instance_states (user_id, banner_id, state_json) VALUES (?1, ?2, ?3)
-                ON CONFLICT(user_id, banner_id) DO UPDATE SET state_json = excluded.state_json;
+                INSERT INTO instance_states (user_id, banner_id, total_counter, logic_state)
+                VALUES (?1, ?2, ?3, ?4)
+                ON CONFLICT(user_id, banner_id) DO UPDATE SET
+                    total_counter = excluded.total_counter,
+                    logic_state = excluded.logic_state;
             "#,
-            rusqlite::params![user_id, banner_id, state_json.to_string()]
+            rusqlite::params![user_id, banner_id, total_counter_i64, logic_state_str]
         )?;
-        Ok(conn.last_insert_rowid())
+        Ok(())
     }
 }

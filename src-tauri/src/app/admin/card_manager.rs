@@ -30,7 +30,7 @@ impl CardManager {
 
     /// 通过标签获取筛选后的卡片的 `Arc` 引用.
     pub fn list_by_tags(&self, tags: &[Tag]) -> Vec<Arc<TaggedCard>> {
-        let ids = self.registry.tag_index.query(tags);
+        let ids = self.registry.tag_index.query_all(tags);
         ids.into_iter()
             .filter_map(|id| self.registry.get(id))
             .collect()
@@ -86,7 +86,6 @@ impl CardManager {
         let ord_card = self.registry.get(id)
             .ok_or_else(|| anyhow::anyhow!("Card {} 不存在", id.0))?;
         let old_path_opt = self.registry.get_path(id);
-            // .ok_or_else(|| anyhow::anyhow!("Card {} 的存储文件不存在", id.0))?;
 
         // 构建新卡片
         let mut new_card = ord_card.as_ref().clone();
@@ -163,7 +162,7 @@ impl CardManager {
             .map(|t| t.value)
             .unwrap_or_else(|| "default".to_string());
 
-        let filename = format!("{}.json", card.inner.id.0);
+        let filename = format!("{}.json", card.id.0);
 
         self.base_path
             .join(game)
@@ -183,7 +182,7 @@ impl CardManager {
             .with_context(|| "Card 转为 JSON 文本时失败")?;
 
         // 原子写入, 写入临时文件后重命名替换
-        let temp_path = path.with_extension(".tmp");
+        let temp_path = path.with_extension("tmp");
         fs::write(&temp_path, json_string)?;
         fs::rename(&temp_path, path)?;
 

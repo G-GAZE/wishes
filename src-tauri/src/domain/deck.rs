@@ -55,7 +55,7 @@ impl Membership {
             match cond {
                 MembershipCondition::TagAll { tags } => {
                     if !tags.is_empty() {
-                        let ids = registry.tag_index.query(tags);
+                        let ids = registry.tag_index.query_all(tags);
                         result.extend(ids);
                     }
                 },
@@ -67,7 +67,7 @@ impl Membership {
                 },
                 MembershipCondition::FilterTagAll { tags } => {
                     if !tags.is_empty() && !result.is_empty() {
-                        let ids = registry.tag_index.query(tags);
+                        let ids = registry.tag_index.query_all(tags);
                         result.retain(|id| ids.contains(id));
                     }
                 },
@@ -165,7 +165,7 @@ impl EventGroup {
                 },
                 EventGroupCondition::TagAll { tags } => {
                     if !tags.is_empty() {
-                        let ids = registry.tag_index.query(tags);
+                        let ids = registry.tag_index.query_all(tags);
                         // result.retain(|id| ids.contains(id));
                         result.extend(ids.intersection(members).cloned());
                     }
@@ -179,7 +179,7 @@ impl EventGroup {
                 },
                 EventGroupCondition::FilterTagAll { tags } => {
                     if !tags.is_empty() && !result.is_empty() {
-                        let ids = registry.tag_index.query(tags);
+                        let ids = registry.tag_index.query_all(tags);
                         result.retain(|id| ids.contains(id));
                     }
                 },
@@ -197,7 +197,10 @@ impl EventGroup {
                 },
                 EventGroupCondition::IncludeGroups { .. } | EventGroupCondition::ExcludeGroups { .. } => {
                     // TODO[2026-08-18]: 未来实现包含/排除其他活动标签组, 并处理循环依赖
-                    unimplemented!("IncludeGroups 和 ExcludeGroups 筛选条件当前不支持")
+                    // 这里可能存在静默错误, 需等待后续 Banner CRUD 时完善
+                    tracing::error!(
+                        "IncludeGroups 和 ExcludeGroups 筛选条件当前不支持, 已跳过"
+                    )
                 },
                 _ => {},
             }
@@ -250,16 +253,21 @@ impl Deck {
         let mut cards = if tags.is_empty() {
             members.clone()
         } else {
-            let ids = registry.tag_index.query(tags);
+            let ids = registry.tag_index.query_all(tags);
             members.intersection(&ids).cloned().collect()
         };
 
         for event in event_tags {
-            if let Some(group) = self.event_groups.get(event) {
-                cards.retain(|id| group.resolve(&members, registry).contains(id));
-            } else {
+            let Some(group) = self.event_groups.get(event) else {
                 return Vec::new();
-            }
+            };
+            let group_cards = group.resolve(&members, registry);
+            cards.retain(|id| group_cards.contains(id));
+            
+            // NOTE: group.resolve 在 retain 闭包外, 降低了时间复杂度
+            // 当前 query_cards 每次还需进行卡组的解析, 是一种为了保留卡组动态性的简化实现
+            // 目前实际卡片不超过 1000 张, 性能可以接收
+            // 若未来出现性能瓶颈, 再考虑引入 DeckResolver 服务
         }
 
         cards.into_iter().collect()
