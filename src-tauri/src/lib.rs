@@ -9,17 +9,16 @@ pub mod interface;
 pub mod utils;
 use tauri::{Manager, State};
 use anyhow::{Context, Result};
+use tauri_plugin_opener::OpenerExt;
 use crate::{
-    app::state::AppState,
-    domain::{
+    app::state::AppState, domain::{
         ids::{
             BannerId,
             CardId,
             DeckId
         },
         tag::Tag
-    },
-    interface::{
+    }, interface::{
         banner_info::{
             BannerInfo,
             BannerSummary
@@ -36,12 +35,24 @@ use crate::{
             UpdateDeckRequest
         },
         wish_response::WishResponse
-    },
-    utils::path::{
-        get_or_create_data_dir,
-        get_or_create_db_dir
+    }, utils::path::{
+        get_or_create_data_dir, get_or_create_db_dir, get_or_create_log_dir
     }
 };
+
+/// 记录 command 错误并转为前端字符串.
+/// 
+/// 所有 Tauri command 的错误出口都应经过此函数, 保证 release 构建下
+/// 也能在日志中留下痕迹.
+fn log_command_err(command: &'static str, e: anyhow::Error) -> String {
+    tracing::error!(
+        command = %command,
+        error = %e,
+        cause_chain = ?e.chain().map(|c| c.to_string()).collect::<Vec<_>>(),
+        "Tauri command 失败"
+    );
+    e.to_string()
+}
 
 /// 执行单次抽卡
 /// 
@@ -54,12 +65,9 @@ use crate::{
 #[tauri::command]
 fn wish(banner_id: u64, state: State<AppState>) -> Result<WishResponse, String> {
     let banner_id = BannerId(banner_id);
-    match state.wish(banner_id) {
-        Ok(result) => {
-            Ok(WishResponse::new(result))
-        },
-        Err(e) => Err(e.to_string())
-    }
+    state.wish(banner_id)
+        .map(WishResponse::new)
+        .map_err(|e| log_command_err("wish", e))
 }
 
 /// 获取所有卡池的摘要列表.
@@ -80,7 +88,7 @@ fn get_banners(state: State<AppState>) -> Result<Vec<BannerSummary>, String> {
 fn get_banner_info(banner_id: u64, state: State<AppState>) -> Result<BannerInfo, String> {
     let banner_id = BannerId(banner_id);
     state.banner_service.get_banner_info(banner_id)
-        .map_err(|e| e.to_string())
+        .map_err(|e| log_command_err("get_banner_info", e))
 }
 
 /// 获取当前图鉴的统计信息.
@@ -93,6 +101,39 @@ fn get_catalog_stats(state: State<AppState>) -> Result<CatalogStats, String> {
 #[tauri::command]
 fn get_data_dir_path(state: State<AppState>) -> Result<String, String> {
     Ok(state.data_dir.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+/// 在系统文件管理器中打开数据目录.
+fn open_data_dir(state: State<AppState>, handle: tauri::AppHandle) -> Result<(), String> {
+    handle.opener()
+        .open_path(state.data_dir.to_string_lossy().as_ref(), None::<&str>)
+        .map_err(|e| {
+            tracing::error!(error = %e, data_dir = %state.data_dir.display(), "打开数据目录失败");
+            e.to_string()
+        })
+}
+
+/// 获取应用日志目录.
+/// 与获取数据目录的方式不同, log_dir 不存在多方引用的情况, 直接获取即可.
+#[tauri::command]
+fn get_log_dir_path(handle: tauri::AppHandle) -> Result<String, String> {
+    get_or_create_log_dir(&handle)
+        .map(|p| p.to_string_lossy().into_owned())
+        .map_err(|e| log_command_err("get_log_dir_path", e))
+}
+
+/// 在系统文件管理器中打开日志目录.
+#[tauri::command]
+fn open_log_dir(handle: tauri::AppHandle) -> Result<(), String> {
+    let log_dir = get_or_create_log_dir(&handle)
+        .map_err(|e| log_command_err("open_log_dir", e))?;
+    handle.opener()
+        .open_path(log_dir.to_string_lossy().as_ref(), None::<&str>)
+        .map_err(|e| {
+            tracing::error!(error = %e, log_dir = %log_dir.display(), "打开日志目录失败");
+            e.to_string()
+        })
 }
 
 /// 获取所有卡片信息.
@@ -113,7 +154,7 @@ fn list_cards_by_tags(tags: Vec<Tag>, state: State<AppState>) -> Result<Vec<Card
 #[tauri::command]
 fn create_card(req: CardCreateRequest, state: State<AppState>) -> Result<CardSummary, String> {
     let card = state.card_manager.create_card(req.content, req.tags)
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| log_command_err("create_card", e))?;
     Ok(CardSummary::from(&card))
 }
 
@@ -125,7 +166,7 @@ fn update_card(req: CardUpdateRequest, state: State<AppState>) -> Result<CardSum
         id, 
         req.new_content,
         req.new_tags
-    ).map_err(|e| e.to_string())?;
+    ).map_err(|e| log_command_err("update_card", e))?;
     Ok(CardSummary::from(&card))
 }
 
@@ -133,7 +174,7 @@ fn update_card(req: CardUpdateRequest, state: State<AppState>) -> Result<CardSum
 #[tauri::command]
 fn delete_card(id: u64, state: State<AppState>) -> Result<(), String> {
     let id = CardId(id);
-    state.card_manager.delete_card(id).map_err(|e| e.to_string())?;
+    state.card_manager.delete_card(id).map_err(|e| log_command_err("delete_card", e))?;
     Ok(())
 }
 
@@ -155,7 +196,7 @@ fn list_decks_by_tags(tags: Vec<Tag>, state: State<AppState>) -> Result<Vec<Deck
 #[tauri::command]
 fn create_deck(req: CreateDeckRequest, state: State<AppState>) -> Result<DeckSummary, String> {
     let deck = state.deck_manager.create_deck(req.name, req.members, req.event_groups, req.tags)
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| log_command_err("create_deck", e))?;
     Ok(DeckSummary::from(&deck))
 }
 
@@ -170,7 +211,7 @@ fn update_deck(req: UpdateDeckRequest, state: State<AppState>) -> Result<DeckSum
         req.members,
         req.event_groups,
         req.tags
-    ).map_err(|e| e.to_string())?;
+    ).map_err(|e| log_command_err("update_deck", e))?;
     Ok(DeckSummary::from(&deck))
 }
 
@@ -178,27 +219,26 @@ fn update_deck(req: UpdateDeckRequest, state: State<AppState>) -> Result<DeckSum
 #[tauri::command]
 fn delete_deck(id: u64, state: State<AppState>) -> Result<(), String> {
     let id = DeckId(id);
-    state.deck_manager.delete_deck(id).map_err(|e| e.to_string())?;
+    state.deck_manager.delete_deck(id).map_err(|e| log_command_err("delete_deck", e))?;
     Ok(())
 }
 
 /// `Tauri` 应用启动入口.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    #[cfg(debug_assertions)]
-    tracing_subscriber::fmt()
-        .with_env_filter("wishes=debug")
-        .with_target(false)
-        .init();
-
-    #[cfg(not(debug_assertions))]
-    tracing_subscriber::fmt()
-        .with_env_filter("wishes=info")
-        .init();
-
     tauri::Builder::default()
         .setup(|app| {
             let handle = app.handle();
+
+            let log_dir = get_or_create_log_dir(&handle)
+                .with_context(|| "获取日志目录失败")?;
+            let log_guard = crate::utils::logging::init(&log_dir)
+                .with_context(|| "初始化日志系统失败")?;
+
+            app.manage(LogGuardState(log_guard));
+
+            tracing::info!(log_dir = %log_dir.display(), "日志系统已初始化");
+
             let data_dir = get_or_create_data_dir(&handle)
                 .with_context(|| "获取数据目录失败")?;
             let db_dir = get_or_create_db_dir(&handle)
@@ -221,6 +261,9 @@ pub fn run() {
             get_banner_info,
             get_catalog_stats,
             get_data_dir_path,
+            open_data_dir,
+            get_log_dir_path,
+            open_log_dir,
             list_cards,
             list_cards_by_tags,
             create_card,
@@ -235,3 +278,6 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running Wishes");
 }
+
+/// 日志守卫的 Tauri 状态包装.
+struct LogGuardState(#[allow(dead_code)] crate::utils::logging::LogGuard);

@@ -6,7 +6,6 @@
 
 use std::{collections::HashSet, path::PathBuf, sync::Arc};
 use dashmap::DashMap;
-use parking_lot::Mutex;
 use super::{tag_index::TagIndex};
 use crate::{
     domain::{
@@ -71,9 +70,14 @@ impl CardRegistry {
 
     /// 插入一张卡片, 同时加入标签索引.
     pub fn insert(&self, card: TaggedCard) {
+        if let Some(old) = self.storage.get(&card.id) {     // 插入前检查并清理旧的标签索引
+            for tag in &old.tags {
+                self.tag_index.remove(card.id, tag);
+            }
+        }
         let tags: Vec<Tag> = card.tags.iter().cloned().collect();
-        self.tag_index.insert(card.inner.id, &tags);
-        self.storage.insert(card.inner.id, Arc::new(card));
+        self.tag_index.insert(card.id, &tags);
+        self.storage.insert(card.id, Arc::new(card));
     }
 
     /// 记录卡片配置文件的路径.
@@ -157,9 +161,14 @@ impl DeckRegistry {
 
     /// 插入一个卡组.
     pub fn insert(&self, deck: TaggedDeck) {
+        if let Some(old) = self.storage.get(&deck.id) {
+            for tag in &old.tags {
+                self.tag_index.remove(deck.id, tag);
+            }
+        }
         let tags: Vec<Tag> = deck.tags.iter().cloned().collect();
-        self.tag_index.insert(deck.inner.id, &tags);
-        self.storage.insert(deck.inner.id, Arc::new(deck));
+        self.tag_index.insert(deck.id, &tags);
+        self.storage.insert(deck.id, Arc::new(deck));
     }
 
     pub fn insert_path(&self, id: DeckId, path: PathBuf) {
@@ -201,16 +210,15 @@ impl DeckRegistry {
 /// 卡池注册器.
 /// 
 /// 管理所有 `TaggedBanner`.
-/// 每个卡池均被包裹在 `Mutex` 中, 以便运行时动态修改状态.
-/// 
-/// `Mutex` 由 `parking_lot` crate 提供.
 pub struct BannerRegistry {
     /// 实际存储结构.
-    storage: DashMap<BannerId, Arc<Mutex<TaggedBanner>>>,
+    storage: DashMap<BannerId, Arc<TaggedBanner>>,
     /// 标签索引.
     pub tag_index: TagIndex<BannerId>,
     deck_to_banners: DashMap<DeckId, HashSet<BannerId>>,
     // TODO: 增加 logic_to_banners 反向索引
+    paths: DashMap<BannerId, PathBuf>,
+    allocator: IdAllocator<BannerId>,
 }
 
 impl BannerRegistry {
@@ -220,7 +228,13 @@ impl BannerRegistry {
             storage: DashMap::new(),
             tag_index: TagIndex::new(),
             deck_to_banners: DashMap::new(),
+            paths: DashMap::new(),
+            allocator: IdAllocator::new(),
         }
+    }
+    
+    pub fn allocate_id(&self) -> BannerId {
+        self.allocator.allocate()
     }
 
     /// 检查指定 Id 的卡池是否存在.
@@ -230,31 +244,44 @@ impl BannerRegistry {
 
     /// 插入一个新卡池.
     pub fn insert(&self, banner: TaggedBanner) {
+        if let Some(old) = self.storage.get(&banner.id) {
+            for tag in &old.tags {
+                self.tag_index.remove(banner.id, tag);
+            }
+        }
         self.deck_to_banners
             .entry(banner.deck_id)
             .or_insert_with(HashSet::new)
             .insert(banner.id);
-        self.storage.insert(banner.inner.id, Arc::new(Mutex::new(banner)));
+        self.storage.insert(banner.id, Arc::new(banner));
     }
 
-    pub fn remove(&self, id: BannerId) -> Option<Arc<Mutex<TaggedBanner>>> {
-        if let Some(banner_arc) = self.storage.remove(&id) {
-            if let Some(banner) = banner_arc.1.try_lock() {
-                let deck_id = banner.deck_id;
-                if let Some(mut entry) = self.deck_to_banners.get_mut(&deck_id) {
-                    entry.remove(&id);
-                    if entry.is_empty() {
-                        drop(entry);
-                        self.deck_to_banners.remove(&deck_id);
-                    }
+    pub fn insert_path(&self, id: BannerId, path: PathBuf) {
+        self.paths.insert(id, path);
+    }
+
+    /// 删除卡池.
+    pub fn remove(&self, id: BannerId) -> Option<Arc<TaggedBanner>> {
+        if let Some(entry) = self.storage.remove(&id) {
+            let banner = entry.1;
+            if let Some(mut e) = self.deck_to_banners.get_mut(&banner.deck_id) {
+                e.remove(&id);
+                if e.is_empty() {
+                    drop(e);
+                    self.deck_to_banners.remove(&banner.deck_id);
                 }
             }
-            Some(banner_arc.1)
+            Some(banner)
         } else {
             None
         }
     }
 
+    pub fn remove_path(&self, id: BannerId) {
+        self.paths.remove(&id);
+    }
+
+    /// 查找引用某个卡组的卡池
     pub fn find_banners_by_deck(&self, deck_id: DeckId) -> Vec<BannerId> {
         self.deck_to_banners
             .get(&deck_id)
@@ -262,9 +289,13 @@ impl BannerRegistry {
             .unwrap_or_default()
     }
 
-    /// 通过 Id 获取卡池的 `Arc<Mutex<_>>` 引用.
-    pub fn get(&self, id: BannerId) -> Option<Arc<Mutex<TaggedBanner>>> {
+    /// 通过 Id 获取卡池的 `Arc<_>` 引用.
+    pub fn get(&self, id: BannerId) -> Option<Arc<TaggedBanner>> {
         self.storage.get(&id).map(|entry| entry.clone())
+    }
+
+    pub fn get_path(&self, id: BannerId) -> Option<PathBuf> {
+        self.paths.get(&id).map(|p| p.clone())
     }
 
     /// 返回卡池总数.
@@ -272,9 +303,14 @@ impl BannerRegistry {
         self.storage.len()
     }
 
+    /// 获取所有卡池的 `Arc<_>` 引用.
+    pub fn all_banners(&self) -> Vec<Arc<TaggedBanner>> {
+        self.storage.iter().map(|entry| entry.value().clone()).collect()
+    }
+
     /// 获取所有卡池 Id 的列表.
     /// 顺序不确定.
-    pub fn ids(&self) -> Vec<BannerId> {
+    pub fn all_ids(&self) -> Vec<BannerId> {
         self.storage.iter().map(|entry| entry.key().clone()).collect()
     }
 }
@@ -334,7 +370,7 @@ impl LogicRegistry {
 
     /// 插入一个逻辑定义.
     pub fn insert_definition(&self, def: TaggedLogicDefinition) {
-        self.definitions.insert(def.inner.id, Arc::new(def));
+        self.definitions.insert(def.id, Arc::new(def));
     }
 
     /// 通过 Id 获取逻辑定义的 `Arc` 引用.

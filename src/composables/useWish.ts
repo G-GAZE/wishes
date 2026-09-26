@@ -24,9 +24,6 @@ export function useWish() {
   async function loadBanners() {
     try {
       banners.value = await invoke<BannerSummary[]>("get_banners");
-      if (banners.value.length > 0) {
-        await loadBannerInfo(banners.value[0].id);
-      }
     } catch (e) {
       error.value = `加载卡池列表失败: ${e}`;
     }

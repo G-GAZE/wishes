@@ -162,23 +162,23 @@ const currentTagClasses = computed(() => {
 
 <template>
   <div class="overlay" :class="{ closing: isClosing }" @click="handleOverlayClick">
-    <div class="overlay-content" @click.stop>
+    <div class="overlay-content">
 
       <!-- 单抽 -->
       <template v-if="!isTenWish && result">
-        <div class="card-content animate-in">
+        <div class="card-content animate-in" @click.stop>
           {{ result.content }}
         </div>
-        <div v-if="result.tags.length" class="tags">
+        <div v-if="result.tags.length" class="tags" @click.stop>
           <span
             v-for="(tag, index) in result.tags"
-            :key="tag.namespace" class="tag"
+            :key="`${tag.namespace}:${tag.value}`" class="tag"
             :class="singleTagClasses[index]"
           >
             {{ tag.value }}
           </span>
         </div>
-        <div v-if="result.event_tags.length" class="event-tags">
+        <div v-if="result.event_tags.length" class="event-tags" @click.stop>
           <span v-for="et in result.event_tags" :key="et" class="event-tag" :class="`tag-event-${et}`">
             {{ et }}
           </span>
@@ -194,20 +194,20 @@ const currentTagClasses = computed(() => {
             </div>
             <Transition name="card-switch" mode="out-in">
               <div :key="currentIndex" class="card-wrapper">
-                <div class="card-content animate-in">
+                <div class="card-content animate-in" @click.stop>
                   {{ currentCard?.content }}
                 </div>
-                <div v-if="currentCard?.tags.length" class="tags">
+                <div v-if="currentCard?.tags.length" class="tags" @click.stop>
                   <span
                     v-for="(tag, index) in currentCard.tags"
-                    :key="tag.namespace"
+                    :key="`${tag.namespace}:${tag.value}`"
                     class="tag"
                     :class="currentTagClasses[index]"
                   >
                     {{ tag.value }}
                   </span>
                 </div>
-                <div v-if="currentCard?.event_tags.length" class="event-tags">
+                <div v-if="currentCard?.event_tags.length" class="event-tags" @click.stop>
                   <span v-for="et in currentCard.event_tags" :key="et" class="event-tag" :class="`tag-event-${et}`">
                     {{ et }}
                   </span>
@@ -218,12 +218,12 @@ const currentTagClasses = computed(() => {
 
           <!-- 汇总 -->
           <div v-else-if="phase === 'summary'" key="summary">
-            <div class="summary-stats">
+            <div class="summary-stats" @click.stop>
               <div v-for="(count, rarity) in summaryStats" :key="rarity" class="stat-item" :class="`tag-rarity-${rarity}`">
                 Rarity {{ rarity }} : {{ count }}
               </div>
             </div>
-            <div class="summary-list">
+            <div class="summary-list" @click.stop>
               <div v-for="(item, idx) in tenResults" :key="idx" class="summary-item" :class="`tag-rarity-${getRarity(item)}`">
                 {{ item.content }}
               </div>
@@ -234,8 +234,8 @@ const currentTagClasses = computed(() => {
       <div v-if="isTenWish && tenResults?.length && phase == 'playing'" class="skip-btn" @click.stop="handleSkip">
         跳过 >
       </div>
-      <div v-if="showContinueHint" class="click-hint">点击以继续</div>
-      <div v-if="showCloseHint" class="click-hint">点击以关闭</div>
+      <div v-if="showContinueHint" class="click-hint">点击空白处以继续</div>
+      <div v-if="showCloseHint" class="click-hint">点击空白处以关闭</div>
     </div>
   </div>
 </template>

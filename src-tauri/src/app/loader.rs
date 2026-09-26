@@ -50,7 +50,7 @@ impl Loader {
             let tagged_card: TaggedCard = serde_json::from_str(&data)
                 .with_context(|| format!("解析 Card 文件中的 JSON 数据失败 - file: {}", path.display()))?;
 
-            let id = tagged_card.inner.id;      // id 唯一性检查
+            let id = tagged_card.id;                    // id 唯一性检查
             if card_registry.contains(id) {
                 anyhow::bail!("重复声明的 Card Id `{}` - file: {}", id.0, path.display())
             }
@@ -90,7 +90,7 @@ impl Loader {
             let tagged_deck: TaggedDeck = serde_json::from_str(&data)
                 .with_context(|| format!("解析 Deck 文件中的 JSON 数据失败 - file: {}", path.display()))?;
 
-            let id = tagged_deck.inner.id;        // id 唯一性检查
+            let id = tagged_deck.id;                // id 唯一性检查
             if deck_registry.contains(id) {
                 anyhow::bail!("重复声明的 Deck Id `{}` - file: {}", id.0, path.display())
             }
@@ -102,27 +102,17 @@ impl Loader {
             // Deck.members 现在改为动态规则, 自动过滤不存在 Id
             // 故无需检查 CardId 是否存在
             
-            for (event_tag, group) in &tagged_deck.inner.event_groups {
+            for (event_tag, group) in &tagged_deck.event_groups {
                 for cond in &group.conditions {
                     // 此处的检查在 IncludeGroups 和 ExcludeGroups 实现后是不需要的
                     match cond {
                         // IncludeIds 执行时会与 Deck::members 取交集, 自动过滤不存在 id
                         // 故这里不需要检查
-                        // EventGroupCondition::IncludeIds { ids } => {
-                        //     for &card_id in ids {
-                        //         if !card_registry.contains(card_id) {
-                        //             anyhow::bail!(
-                        //                 "Deck {} 的 EventGroup {:?} 的 IncludeIds 引用了未定义的 Card(id: {}) - file: {}", 
-                        //                 tagged_deck.inner.id.0, event_tag, card_id.0, path.display()
-                        //             );
-                        //         }
-                        //     }
-                        // },
                         EventGroupCondition::IncludeGroups { .. } |
                         EventGroupCondition::ExcludeGroups { .. } => {
                             anyhow::bail!(
                                 "Deck {} 的 EventGroup {:?} 使用了未支持的 IncludeGroups/ExcludeGroups - file: {}",
-                                tagged_deck.inner.id.0, event_tag, path.display()
+                                tagged_deck.id.0, event_tag, path.display()
                             )
                         }
                         _ => {},
@@ -162,16 +152,16 @@ impl Loader {
             let tagged_logic_def: TaggedLogicDefinition = serde_json::from_str(&data)
                 .with_context(|| format!("解析 Logic 文件中的 JSON 数据失败 - file: {}", path.display()))?;
 
-            let id = tagged_logic_def.inner.id;        // id 唯一性检查
+            let id = tagged_logic_def.id;        // id 唯一性检查
             if logic_registry.contains_definition(id) {
                 anyhow::bail!("重复声明的 Logic Id `{}` - file: {}", id.0, path.display())
             }
 
-            if let LogicVariant::Hardcoded { executor_name } = &tagged_logic_def.inner.variant {
+            if let LogicVariant::Hardcoded { executor_name } = &tagged_logic_def.variant {
                 if !logic_registry.contains_hardcoded_executor(executor_name) {
                     anyhow::bail!(
                         "Logic {} 引用了未注册的硬编码执行器 (Hardcoded Executor) {} - file: {}",
-                        tagged_logic_def.inner.id.0, executor_name, path.display()
+                        tagged_logic_def.id.0, executor_name, path.display()
                     )
                 }
             }
@@ -212,28 +202,28 @@ impl Loader {
             let tagged_banner: TaggedBanner = serde_json::from_str(&data)
                 .with_context(|| format!("解析 Banner 文件中的 JSON 数据失败 - file: {}", path.display()))?;
             
-            let id = tagged_banner.inner.id;        // id 唯一性检查
+            let id = tagged_banner.id;              // id 唯一性检查
             if banner_registry.contains(id) {
                 anyhow::bail!("重复声明的 Banner Id `{}` - file: {}", id.0, path.display())
             }
 
             // 检查 Logic
-            if !logic_registry.contains_definition(tagged_banner.inner.logic_instance.logic_id) {
+            if !logic_registry.contains_definition(tagged_banner.logic_id) {
                 anyhow::bail!(
                     "Banner {} 引用了未定义的 Logic {} - file: {}",
-                    tagged_banner.inner.id.0, tagged_banner.inner.logic_instance.logic_id.0, path.display()
+                    tagged_banner.id.0, tagged_banner.logic_id.0, path.display()
                 );
             }
 
             // 检查 Deck
-            if let Some(tagged_deck) = deck_registry.get(tagged_banner.inner.deck_id) {
-                let tagged_logic_def = logic_registry.get_definition(tagged_banner.inner.logic_instance.logic_id).unwrap();
-                if let LogicVariant::Hardcoded { executor_name } = &tagged_logic_def.inner.variant {
+            if let Some(tagged_deck) = deck_registry.get(tagged_banner.deck_id) {
+                let tagged_logic_def = logic_registry.get_definition(tagged_banner.logic_id).unwrap();
+                if let LogicVariant::Hardcoded { executor_name } = &tagged_logic_def.variant {
                     let mut missing = Vec::new();
                     let combos = logic_registry.hardcoded_possible_output_combinations(executor_name)
                         .unwrap_or_else(|| Vec::new());
                     for combo in combos {
-                        let candidates = tagged_deck.inner.query_cards(card_registry, &combo.0, &combo.1);
+                        let candidates = tagged_deck.query_cards(card_registry, &combo.0, &combo.1);
                         if candidates.is_empty() {
                             missing.push(combo);
                         }
@@ -241,7 +231,7 @@ impl Loader {
                     if !missing.is_empty() {
                         anyhow::bail!(
                             "Banner {} 中的 Deck {} 缺少 Logic {} 可能输出的 Tag 组合 - file: {}\n{}",
-                            tagged_banner.inner.id.0, tagged_banner.inner.id.0, tagged_logic_def.inner.id.0, path.display(),
+                            tagged_banner.id.0, tagged_banner.id.0, tagged_logic_def.id.0, path.display(),
                             missing.iter()
                                 .map(|p| format!("  - {:?}", p))
                                 .collect::<Vec<_>>()
@@ -258,7 +248,7 @@ impl Loader {
             } else {
                 anyhow::bail!(
                     "Banner {} 引用了未定义的 Deck {} - file: {}",
-                    tagged_banner.inner.id.0, tagged_banner.inner.deck_id.0, path.display()
+                    tagged_banner.id.0, tagged_banner.deck_id.0, path.display()
                 );
             }
         }

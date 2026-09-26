@@ -35,14 +35,17 @@ where
     pub fn remove(&self, id: Id, tag: &Tag) {
         if let Some(mut entry) = self.tag_to_ids.get_mut(tag) {
             entry.remove(&id);
-            // 集合为空时, 保留
+            if entry.is_empty() {
+                drop(entry);
+                self.tag_to_ids.remove(tag);        // 集合空时删掉
+            }
         }
     }
 
     /// 查询拥有所有给定标签集合的所有 Id (交集查询).
     /// 
     /// 若 `tags` 为空, 返回空集.
-    pub fn query(&self, tags: &[Tag]) -> HashSet<Id> {
+    pub fn query_all(&self, tags: &[Tag]) -> HashSet<Id> {
         let mut iter = tags.iter();
         if let Some(first) = iter.next() {
             let mut result = self.tag_to_ids.get(first)
@@ -76,7 +79,7 @@ where
     }
 
     /// 返回索引中所有的 Id 集合.
-    pub fn query_all(&self) -> HashSet<Id> {
+    pub fn all_ids(&self) -> HashSet<Id> {
         let mut res = HashSet::new();
         for entry in self.tag_to_ids.iter() {
             res.extend(entry.value().iter().copied());

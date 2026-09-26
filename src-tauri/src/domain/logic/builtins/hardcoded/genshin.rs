@@ -21,6 +21,7 @@ const TYPE_WEAPON: &str = "weapon";
 
 /// 原神角色 UP 卡池逻辑状态
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(default)]
 struct GenshinCharacterUpState {
     counter_5: u16,
     counter_4: u16,
@@ -158,7 +159,14 @@ impl HardcodedExecutor for GenshinCharacterUpLogic {
     {
         let current: GenshinCharacterUpState = match serde_json::from_value(state.clone()) {
             Ok(s) => s,
-            Err(_) => GenshinCharacterUpState::default()
+            Err(e) => {         // 反序列化失败时, 回退到 Default 并记录错误.
+                tracing::error!(
+                    error = %e,
+                    state = %state,
+                    "GenshinCharacterUpState 反序列化失败, 回退到 Default"
+                );
+                GenshinCharacterUpState::default()
+            }
         };
 
         let (new_state, result) = Self::draw(current, rng);
@@ -173,6 +181,10 @@ impl HardcodedExecutor for GenshinCharacterUpLogic {
             (
                 vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_5), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)],
                 vec![EventTag::up()]
+            ),
+            (
+                vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_5), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)],
+                vec![EventTag::standard()]
             ),
             (
                 vec![Tag::new(Tag::NAMESPACE_RARITY, RARITY_4), Tag::new(Tag::NAMESPACE_TYPE, TYPE_CHARACTER)],

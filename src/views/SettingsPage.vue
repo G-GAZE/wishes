@@ -7,9 +7,16 @@
 import { invoke } from '@tauri-apps/api/core';
 import { onMounted, ref } from 'vue';
 import AboutPage from './AboutPage.vue';
+import { useMessage } from 'naive-ui';
+
+const message = useMessage();
 
 const loading = ref(false);
 const data_dir = ref<string | null>(null);
+const log_dir = ref<string | null>(null);
+
+const dataDirOpening = ref(false);
+const logDirOpening = ref(false);
 
 /** 视图状态: settings (设置列表) | about (关于页) */
 const currentView = ref<'settings' | 'about'>('settings');
@@ -18,10 +25,17 @@ onMounted(() => {
   const loadDataDir = async () => {
     loading.value = true;
     try {
-      data_dir.value = await invoke("get_data_dir_path");
+      const [d, l] = await Promise.all([
+        invoke<string>('get_data_dir_path'),
+        invoke<string>('get_log_dir_path'),
+      ]);
+      data_dir.value = d;
+      log_dir.value = l;
     } catch (e) {
-      console.error("获取数据目录路径失败: ", e);
+      message.error(`获取数据目录路径失败: ${e}`);
       data_dir.value = null;
+      log_dir.value = null;
+
     } finally {
       loading.value = false;
     }
@@ -29,6 +43,30 @@ onMounted(() => {
 
   loadDataDir();
 });
+
+async function openDataDir() {
+  if (dataDirOpening.value) return;
+  dataDirOpening.value = true;
+  try {
+    await invoke('open_data_dir');
+  } catch (e) {
+    message.error(`打开数据目录失败: ${e}`);
+  } finally {
+    dataDirOpening.value = false;
+  }
+}
+
+async function openLogDir() {
+  if (logDirOpening.value) return;
+  logDirOpening.value = true;
+  try {
+    await invoke('open_log_dir');
+  } catch (e) {
+    message.error(`打开日志目录失败: ${e}`);
+  } finally {
+    logDirOpening.value = false;
+  }
+}
 </script>
 
 <template>
@@ -42,7 +80,27 @@ onMounted(() => {
         <div class="settings-list">
           <div class="setting-item">
             <span class="setting-label">数据目录</span>
-            <span class="setting-value">{{ data_dir ? data_dir : "无法加载" }}</span>
+            <span class="setting-value">
+              <span class="path-text">{{ data_dir ?? "加载中..." }}</span>
+              <button
+                v-if="log_dir"
+                class="open-btn"
+                :disabled="dataDirOpening"
+                @click="openDataDir"
+              >打开</button>
+            </span>
+          </div>
+          <div class="setting-item">
+            <span class="setting-label">日志目录</span>
+            <span class="setting-value">
+              <span class="path-text">{{ log_dir ?? "加载中..." }}</span>
+              <button
+                v-if="log_dir"
+                class="open-btn"
+                :disabled="logDirOpening"
+                @click="openLogDir"
+              >打开</button>
+            </span>
           </div>
           <div class="setting-item">
             <span class="setting-label">深色模式</span>
@@ -162,6 +220,35 @@ onMounted(() => {
   color: #4a5a70;
   font-size: 1.6rem;
   line-height: 1;
+}
+
+.path-text {
+  max-width: 40ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: bottom;
+}
+
+.open-btn {
+  background: rgba(79, 110, 247, 0.15);
+  border: 1px solid #2d3642;
+  border-radius: 6px;
+  padding: 3px 12px;
+  color: #b0c0d0;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.open-btn:hover:not(:disabled) {
+  background: rgba(79, 110, 247, 0.3);
+  color: #fff;
+}
+.open-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* --- 滑动过渡 --- */

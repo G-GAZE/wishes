@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useDeckManager } from '../../composables/useDeckManager';
 import DeckEditor from '../deck/DeckEditor.vue';
-import { useDialog } from 'naive-ui';
+import { useDialog, useMessage } from 'naive-ui';
 
 const {
   decks,
@@ -12,6 +12,7 @@ const {
   create,
   update,        // 更新方法
   remove,        // 删除方法
+  error,
 } = useDeckManager();
 
 // 编辑状态
@@ -21,6 +22,7 @@ const isCreating = ref(false);
 const isEditorOpen = computed(() => editingDeckId.value !== null || isCreating.value);
 
 const dialog = useDialog();
+const message = useMessage();
 
 const currentDeck = computed(() => {
   if (editingDeckId.value === null) return null;
@@ -80,7 +82,12 @@ async function handleDelete(deckId: number) {
     positiveText: '确认删除',
     negativeText: '取消',
     onPositiveClick: async () => {
-      await remove(deckId);
+      const success = await remove(deckId);
+      if (!success) {
+        message.error(error.value ?? "卡组删除失败");
+        return false;
+      }
+      message.success("删除成功");
     },
     positiveButtonProps: {
       color: '#e74c3c',

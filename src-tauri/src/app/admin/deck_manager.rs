@@ -36,7 +36,7 @@ impl DeckManager {
     }
 
     pub fn list_by_tags(&self, tags: &[Tag]) -> Vec<Arc<TaggedDeck>> {
-        let ids = self.deck_registry.tag_index.query(tags);
+        let ids = self.deck_registry.tag_index.query_all(tags);
         ids.into_iter()
             .filter_map(|id| self.deck_registry.get(id))
             .collect()
@@ -63,6 +63,8 @@ impl DeckManager {
 
         self.deck_registry.insert(tagged_deck.clone());
         self.deck_registry.insert_path(id, file_path);
+        
+        tracing::info!(deck_id = %id.0, "新建 Deck");
 
         Ok(tagged_deck)
     }
@@ -87,16 +89,21 @@ impl DeckManager {
         // 校验卡组更新后的数据完整性
         let affected_banners = self.banner_registry.find_banners_by_deck(id);
         for banner_id in affected_banners {
-            let banner_lock = self.banner_registry.get(banner_id)
+            let banner = self.banner_registry.get(banner_id)
                 .ok_or_else(|| anyhow::anyhow!("Banner {} 不存在", banner_id.0))?;
-            let banner = banner_lock.lock();
             if let Err(e) = validation::check_banner_coverage(
                 &banner,
                 &new_deck,
                 &self.card_registry,
                 &self.logic_registry
             ) {
-                anyhow::bail!("Deck {} 更新后, Banner {} 校验失败: {}", id.0, banner_id.0, e)
+                tracing::warn!(
+                    deck_id = %id.0,
+                    banner_id = %banner_id.0,
+                    error = %e,
+                    "Deck 更新失败, 因为更新后将导致卡池校验失败"
+                );
+                anyhow::bail!("Deck {} 更新失败, 因为更新后将导致 Banner {} 校验失败: {}", id.0, banner_id.0, e)
             }
         }
 
@@ -122,6 +129,8 @@ impl DeckManager {
         } else {
             tracing::warn!("Deck {} 的旧文件路径未记录, 跳过删除", id.0);
         }
+        
+        tracing::info!(deck_id = %id.0, "修改 Deck");
 
         Ok(new_deck)
     }
@@ -129,6 +138,11 @@ impl DeckManager {
     pub fn delete_deck(&self, id: DeckId) -> Result<()> {
         let affected_banners = self.banner_registry.find_banners_by_deck(id);
         if !affected_banners.is_empty() {
+            tracing::warn!(
+                deck_id = %id.0,
+                affected_banners = ?affected_banners.iter().map(|id| id.0).collect::<Vec<_>>(),
+                "Deck 被 Banner 引用, 无法删除"
+            );
             anyhow::bail!("Deck {} 被下列 Banner {:?} 引用, 无法删除", id.0, affected_banners);
         }
 
@@ -141,12 +155,14 @@ impl DeckManager {
 
         self.deck_registry.remove(id);
         self.deck_registry.remove_path(id);
+        
+        tracing::info!(deck_id = %id.0, "删除 Deck");
 
         Ok(())
     }
 
     pub fn build_file_path(&self, deck: &TaggedDeck) -> PathBuf {
-        self.base_path.join(format!("{}.json", deck.inner.id.0))
+        self.base_path.join(format!("{}.json", deck.id.0))
     }
 
     fn save_to_path(deck: &TaggedDeck, path: &PathBuf) -> Result<()> {
@@ -157,7 +173,7 @@ impl DeckManager {
         let json_string = serde_json::to_string_pretty(deck)
             .with_context(|| "Deck 转为 JSON 文本时失败")?;
 
-        let temp_path = path.with_extension(".tmp");
+        let temp_path = path.with_extension("tmp");
         fs::write(&temp_path, json_string)?;
         fs::rename(&temp_path, path)?;
 

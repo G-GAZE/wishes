@@ -27,8 +27,8 @@ impl WishResponse {
         tags.sort_by(|a, b| a.namespace.cmp(&b.namespace));     // 按命名空间字母顺序排序
 
         Self {
-            id: res.card.inner.id.0,
-            content: res.card.inner.content.clone(),
+            id: res.card.id.0,
+            content: res.card.content.clone(),
             tags,
             event_tags: res.event_tags,
         }
