@@ -77,26 +77,22 @@ impl Membership {
                         result.retain(|id| ids.contains(id));
                     }
                 },
-                MembershipCondition::IncludeIds { ids } => {
-                    if !ids.is_empty() {
+                MembershipCondition::IncludeIds { ids }
+                    if !ids.is_empty() => {
                         // 只保留存在的 Id
                         // 直接使用迭代器拓展, 性能更好
                         result.extend(ids.iter().filter(|id| registry.contains(**id)).copied());
-                    }
-                },
+                    },
                 _ => {},
             }
         }
 
         // 2. 应用排除型条件, 顺序不影响排除的效果
         for cond in &self.conditions {
-            match cond {
-                MembershipCondition::ExcludeIds { ids } => {
-                    if !ids.is_empty() {
-                        result.retain(|id| !ids.contains(id));
-                    }
-                },
-                _ => {},
+            if let MembershipCondition::ExcludeIds { ids } = cond {
+                if !ids.is_empty() {
+                    result.retain(|id| !ids.contains(id));
+                }
             }
         }
 
@@ -208,13 +204,10 @@ impl EventGroup {
 
         // 2. 应用所有排除型条件
         for cond in &self.conditions {
-            match cond {
-                EventGroupCondition::ExcludeIds { ids } => {
-                    if !ids.is_empty() {
-                        result.retain(|id| !ids.contains(id));
-                    }
-                },
-                _ => {},
+            if let EventGroupCondition::ExcludeIds { ids } = cond {
+                if !ids.is_empty() {
+                    result.retain(|id| !ids.contains(id));
+                }
             }
         }
 

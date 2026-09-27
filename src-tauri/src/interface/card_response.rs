@@ -20,7 +20,7 @@ impl From<&TaggedCard> for CardSummary {
         Self {
             id: value.inner.id.0,
             content: value.inner.content.clone(),
-            tags: tags,
+            tags,
         }
     }
 }

@@ -35,6 +35,12 @@ pub struct CardRegistry {
     allocator: IdAllocator<CardId>,
 }
 
+impl Default for CardRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CardRegistry {
     /// 创建新卡片注册器.
     pub fn new() -> Self {
@@ -135,6 +141,12 @@ pub struct DeckRegistry {
     allocator: IdAllocator<DeckId>,
 }
 
+impl Default for DeckRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DeckRegistry {
     /// 创建新的卡组注册器.
     pub fn new() -> Self {
@@ -221,6 +233,12 @@ pub struct BannerRegistry {
     allocator: IdAllocator<BannerId>,
 }
 
+impl Default for BannerRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BannerRegistry {
     /// 创建新的卡池注册器.
     pub fn new() -> Self {
@@ -251,7 +269,7 @@ impl BannerRegistry {
         }
         self.deck_to_banners
             .entry(banner.deck_id)
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(banner.id);
         self.storage.insert(banner.id, Arc::new(banner));
     }
@@ -311,7 +329,7 @@ impl BannerRegistry {
     /// 获取所有卡池 Id 的列表.
     /// 顺序不确定.
     pub fn all_ids(&self) -> Vec<BannerId> {
-        self.storage.iter().map(|entry| entry.key().clone()).collect()
+        self.storage.iter().map(|entry| *entry.key()).collect()
     }
 }
 
@@ -329,6 +347,12 @@ pub struct LogicRegistry {
     rule_executors: DashMap<String, Arc<dyn RuleExecutor>>,
     /// 逻辑定义的标签索引.
     pub tag_index: TagIndex<LogicId>,
+}
+
+impl Default for LogicRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl LogicRegistry {
