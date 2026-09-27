@@ -1,4 +1,5 @@
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { CardCreateRequest, CardSummary, CardUpdateRequest, createCard, deleteCard, listCards, updateCard } from "../api/card";
 import { Tag } from "../types";
 
@@ -7,6 +8,8 @@ export function useCardManager() {
   const cards = ref<CardSummary[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
+
+  const { t } = useI18n();
 
   const searchQuery = ref("");
   const selectedTagFilter = ref<Tag | null>(null);
@@ -32,7 +35,7 @@ export function useCardManager() {
       cards.value = loaded.sort((a, b) => b.id - a.id);   // Id 降序排序
 
     } catch (e) {
-      error.value = `Card 加载失败: ${e}`;
+      error.value = t("card.loadFailed", { error: e });
     } finally {
       loading.value = false;
     }
@@ -46,7 +49,7 @@ export function useCardManager() {
       cards.value.unshift(newCard);
       return newCard;
     } catch (e) {
-      error.value = `创建 Card 失败: ${e}`;
+      error.value = t("card.createFailed", { error: e });
       return null;
     } finally {
       loading.value = false;
@@ -64,7 +67,7 @@ export function useCardManager() {
       }
       return updated;
     } catch (e) {
-      error.value = `更新 Card 失败: ${e}`;
+      error.value = t("card.updateFailed", { error: e });
       return null;
     } finally {
       loading.value = false;
@@ -79,7 +82,7 @@ export function useCardManager() {
       cards.value = cards.value.filter(c => c.id !== id);
       return true;
     } catch (e) {
-      error.value = `删除 Card 失败: ${e}`;
+      error.value = t("card.deleteError", { error: e });
       return false;
     } finally {
       loading.value = false;

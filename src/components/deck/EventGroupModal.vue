@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { NSelect } from 'naive-ui';
 import type { SelectOption } from 'naive-ui';
 import type { EventTag } from '../../types';
-import { EVENT_TAG_OPTIONS } from '../../constants/eventTags';
+import { EVENT_TAG_OPTIONS, eventTagLabel } from '../../constants/eventTags';
 
 const props = withDefaults(
   defineProps<{
@@ -21,10 +22,12 @@ const emit = defineEmits<{
 
 const selected = ref<EventTag | null>(null);
 
+const { t } = useI18n();
+
 const options = computed<SelectOption[]>(() =>
   EVENT_TAG_OPTIONS.map(opt => ({
     value: opt.value,
-    label: `${opt.value} (${opt.label})`,
+    label: `${opt.value} (${eventTagLabel(t, opt.value)})`,
     disabled: (props.existingTags ?? []).includes(opt.value),
   }))
 );
@@ -45,25 +48,25 @@ function close() {
   <div class="modal-overlay" @click="close">
     <div class="modal-content" @click.stop>
       <div class="modal-header">
-        <h3>添加活动组</h3>
+        <h3>{{ t('deck.eventGroupModalTitle') }}</h3>
         <button class="close-btn" @click="close">✕</button>
       </div>
 
       <div class="modal-body">
-        <label class="field-label">活动组类型</label>
+        <label class="field-label">{{ t('deck.eventGroupTypeLabel') }}</label>
         <n-select
           v-model:value="selected"
           :options="options"
-          placeholder="请选择活动组类型"
+          :placeholder="t('deck.eventGroupTypePlaceholder')"
           class="event-tag-select"
         />
-        <p class="hint">已存在的活动组不可重复添加</p>
+        <p class="hint">{{ t('deck.eventGroupExistsHint') }}</p>
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" @click="close">取消</button>
+        <button class="btn-cancel" @click="close">{{ t('common.cancel') }}</button>
         <button class="btn-confirm" :disabled="!canConfirm" @click="confirm">
-          确认添加
+          {{ t('deck.eventGroupConfirm') }}
         </button>
       </div>
     </div>

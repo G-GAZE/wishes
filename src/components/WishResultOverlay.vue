@@ -7,6 +7,7 @@
  */
 
 import { computed, onUnmounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { WishResponse } from '../types';
 import { useTagStyles } from '../composables/useTagStyles';
 
@@ -19,6 +20,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'close'): void
 }>();
+
+const { t } = useI18n();
 
 const timerInterval = 2000;   // 点击提示出现的延迟时间
 
@@ -220,7 +223,7 @@ const currentTagClasses = computed(() => {
           <div v-else-if="phase === 'summary'" key="summary">
             <div class="summary-stats" @click.stop>
               <div v-for="(count, rarity) in summaryStats" :key="rarity" class="stat-item" :class="`tag-rarity-${rarity}`">
-                Rarity {{ rarity }} : {{ count }}
+                {{ t('wish.rarity', { rarity, count }) }}
               </div>
             </div>
             <div class="summary-list" @click.stop>
@@ -232,10 +235,10 @@ const currentTagClasses = computed(() => {
         </Transition>
       </template>
       <div v-if="isTenWish && tenResults?.length && phase == 'playing'" class="skip-btn" @click.stop="handleSkip">
-        跳过 >
+        {{ t('wish.skip') }}
       </div>
-      <div v-if="showContinueHint" class="click-hint">点击空白处以继续</div>
-      <div v-if="showCloseHint" class="click-hint">点击空白处以关闭</div>
+      <div v-if="showContinueHint" class="click-hint">{{ t('wish.clickContinue') }}</div>
+      <div v-if="showCloseHint" class="click-hint">{{ t('wish.clickClose') }}</div>
     </div>
   </div>
 </template>

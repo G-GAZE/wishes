@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { listCards } from '../../api/card';
 import type { CardSummary } from '../../api/card';
 
@@ -11,6 +12,8 @@ const emit = defineEmits<{
   (e: 'confirm', ids: number[]): void;
   (e: 'close'): void;
 }>();
+
+const { t } = useI18n();
 
 const cards = ref<CardSummary[]>([]);
 const searchQuery = ref('');
@@ -144,7 +147,7 @@ function close() {
   <div class="modal-overlay" @click="close">
     <div class="modal-content" @click.stop>
       <div class="modal-header">
-        <h3>选择卡片</h3>
+        <h3>{{ t('condition.selectCards') }}</h3>
         <button class="close-btn" @click="close">✕</button>
       </div>
 
@@ -152,21 +155,21 @@ function close() {
         <div class="search-input-wrapper">
           <input
             v-model="searchQuery"
-            placeholder="搜索内容或标签, 空格分隔多个关键词"
+            :placeholder="t('condition.searchPlaceholder')"
             class="search-input"
           />
           <button
             v-if="searchQuery"
             class="search-clear"
-            title="清空"
+            :title="t('condition.clearSearch')"
             @click="clearSearch"
           >✕</button>
         </div>
-        <span class="selected-count">已选 {{ selectedIds.size }} 张</span>
+        <span class="selected-count">{{ t('condition.selectedCount', { count: selectedIds.size }) }}</span>
       </div>
 
       <div class="modal-body">
-        <div v-if="loading" class="loading">加载中...</div>
+        <div v-if="loading" class="loading">{{ t('common.loading') }}</div>
         <div v-else class="card-grid">
           <div
             v-for="card in sortedCards"
@@ -198,14 +201,14 @@ function close() {
             <div class="check-mark" v-if="selectedIds.has(card.id)">✓</div>
           </div>
           <div v-if="sortedCards.length === 0 && !loading" class="empty">
-            没有匹配的卡片
+            {{ t('card.noMatch') }}
           </div>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" @click="close">取消</button>
-        <button class="btn-confirm" @click="confirm">确认选择</button>
+        <button class="btn-cancel" @click="close">{{ t('common.cancel') }}</button>
+        <button class="btn-confirm" @click="confirm">{{ t('condition.confirmSelection') }}</button>
       </div>
     </div>
   </div>

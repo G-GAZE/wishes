@@ -5,6 +5,7 @@
  */
 
 import type { BannerInfo } from '../types';
+import { useI18n } from 'vue-i18n';
 
 defineProps<{
   bannerInfo: BannerInfo | null
@@ -14,6 +15,8 @@ defineEmits<{
   (e: 'wishSingle'): void,
   (e: 'wishTen'): void,
 }>();
+
+const { t } = useI18n();
 </script>
 
 
@@ -22,7 +25,7 @@ defineEmits<{
       <div class="gacha-card">
         <div class="banner-id">ID {{ bannerInfo?.id }}</div>
         <div class="info-section">
-          <div class="banner-name">{{ bannerInfo?.name || '未选择卡池' }}</div>
+          <div class="banner-name">{{ bannerInfo?.name || t('gacha.noBannerSelected') }}</div>
           <div class="banner-tags" v-if="bannerInfo">
             <span
               v-for="tag in bannerInfo.tags"
@@ -34,19 +37,19 @@ defineEmits<{
           </div>
           <div class="detail-list" v-if="bannerInfo">
             <div class="detail-item">
-              <span class="label">卡组</span>
+              <span class="label">{{ t('gacha.deckLabel') }}</span>
               <span class="value">{{ bannerInfo.deck_name }}</span>
             </div>
             <div class="detail-item">
-              <span class="label">逻辑</span>
+              <span class="label">{{ t('gacha.logicLabel') }}</span>
               <span class="value">{{ bannerInfo.logic_name }}</span>
             </div>
             <div class="detail-item">
-              <span class="label">总抽数</span>
+              <span class="label">{{ t('gacha.totalCounterLabel') }}</span>
               <span class="value">{{ bannerInfo.total_counter }}</span>
             </div>
           </div>
-          <div v-else class="loading_placeholder">加载卡池信息中...</div>
+          <div v-else class="loading_placeholder">{{ t('gacha.loadingInfo') }}</div>
         </div>
 
         <div class="portrait-section">
@@ -56,10 +59,10 @@ defineEmits<{
 
     <div class="action-bar">
       <button class="btn-wish btn-single" @click="$emit('wishSingle')" :disabled="!bannerInfo">
-        抽卡 1 次
+        {{ t('gacha.wishSingle') }}
       </button>
       <button class="btn-wish btn-ten" @click="$emit('wishTen')" :disabled="!bannerInfo">
-        抽卡 10 次
+        {{ t('gacha.wishTen') }}
       </button>
     </div>
   </div>

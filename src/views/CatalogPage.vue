@@ -5,6 +5,7 @@
  */
 
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import CardManager from '../components/catalog/CardManager.vue';
 import DeckManager from '../components/catalog/DeckManager.vue';
 import LogicManager from '../components/catalog/LogicManager.vue';
@@ -31,11 +32,13 @@ import BannerManager from '../components/catalog/BannerManager.vue';
 //   loadCatalogStats();
 // })
 
+const { t } = useI18n();
+
 const tabs = [
-  { key: "cards", label: "卡片" },
-  { key: "decks", label: "卡组" },
-  { key: "logics", label: "逻辑" },
-  { key: "banners", label: "卡池" },
+  { key: "cards", labelKey: "catalog.tabs.cards" },
+  { key: "decks", labelKey: "catalog.tabs.decks" },
+  { key: "logics", labelKey: "catalog.tabs.logics" },
+  { key: "banners", labelKey: "catalog.tabs.banners" },
   // 后续补充
 ];
 const activeTab = ref("cards");
@@ -55,8 +58,8 @@ const currentComponent = computed(() => {
 <template>
   <div class="page catalog-page">
     <div class="catalog-header">
-      <span class="title">图鉴</span>
-      <span class="subtitle">管理所有卡片、卡组、逻辑与卡池</span>
+      <span class="title">{{ t('catalog.title') }}</span>
+      <span class="subtitle">{{ t('catalog.subtitle') }}</span>
     </div>
     
     <!-- 标签栏 -->
@@ -68,7 +71,7 @@ const currentComponent = computed(() => {
         :class="{ active: activeTab === tab.key }"
         @click="activeTab = tab.key"
       >
-        {{ tab.label }}
+        {{ t(tab.labelKey) }}
       </button>
     </div>
 

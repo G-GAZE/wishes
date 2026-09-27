@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 </script>
 
 
 <template>
   <div class="manager-logic">
-    <h3>逻辑管理</h3>
+    <h3>{{ t('logic.managerTitle') }}</h3>
   </div>
 </template>
 

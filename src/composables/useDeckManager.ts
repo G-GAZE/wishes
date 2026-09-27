@@ -1,4 +1,5 @@
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { createDeck, CreateDeckRequest, DeckSummary, deleteDeck, listDecks, updateDeck, UpdateDeckRequest } from "../api/decks";
 
 
@@ -6,6 +7,8 @@ export function useDeckManager() {
   const decks = ref<DeckSummary[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
+
+  const { t } = useI18n();
 
   const searchQuery = ref("");
   const filteredDecks = computed(() => {
@@ -30,7 +33,7 @@ export function useDeckManager() {
       const loaded = await listDecks();
       decks.value = loaded.sort((a, b) => b.id - a.id);
     } catch (e) {
-      error.value = `Deck 加载失败: ${e}`;
+      error.value = t("deck.loadFailed", { error: e });
     } finally {
       loading.value = false;
     }
@@ -48,7 +51,7 @@ export function useDeckManager() {
       decks.value.unshift(newDeck);
       return newDeck
     } catch (e) {
-      error.value = `创建 Deck 失败: ${e}`;
+      error.value = t("deck.createFailed", { error: e });
       return null;
     } finally {
       loading.value = false;
@@ -66,7 +69,7 @@ export function useDeckManager() {
       }
       return updated;
     } catch (e) {
-      error.value = `更新 Deck 失败: ${e}`;
+      error.value = t("deck.updateFailed", { error: e });
       return null;
     } finally {
       loading.value = false;
@@ -81,7 +84,7 @@ export function useDeckManager() {
       decks.value = decks.value.filter(d => d.id !== id);
       return true;
     } catch (e) {
-      error.value = `删除 Deck 失败: ${e}`;
+      error.value = t("deck.deleteError", { error: e });
       return false;
     } finally {
       loading.value = false;

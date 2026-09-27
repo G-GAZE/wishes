@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useDeckManager } from '../../composables/useDeckManager';
 import DeckEditor from '../deck/DeckEditor.vue';
 import { useDialog, useMessage } from 'naive-ui';
@@ -23,6 +24,7 @@ const isEditorOpen = computed(() => editingDeckId.value !== null || isCreating.v
 
 const dialog = useDialog();
 const message = useMessage();
+const { t } = useI18n();
 
 const currentDeck = computed(() => {
   if (editingDeckId.value === null) return null;
@@ -77,17 +79,17 @@ function handleCancel() {
 // 删除确认（原有）
 async function handleDelete(deckId: number) {
   dialog.warning({
-    title: '确认删除',
-    content: '确认删除该卡组吗?',
-    positiveText: '确认删除',
-    negativeText: '取消',
+    title: t('deck.deleteConfirmTitle'),
+    content: t('deck.deleteConfirmContent'),
+    positiveText: t('deck.deleteConfirmTitle'),
+    negativeText: t('common.cancel'),
     onPositiveClick: async () => {
       const success = await remove(deckId);
       if (!success) {
-        message.error(error.value ?? "卡组删除失败");
+        message.error(error.value ?? t('deck.deleteFailed'));
         return false;
       }
-      message.success("删除成功");
+      message.success(t('deck.deleteSuccess'));
     },
     positiveButtonProps: {
       color: '#e74c3c',
@@ -111,14 +113,14 @@ onMounted(() => {
           <div class="search-wrapper">
             <input 
               v-model="searchQuery"
-              placeholder="搜索卡组..."
+              :placeholder="t('deck.searchPlaceholder')"
               class="search-input"
             />
             <div class="filtered-deck-counter">
-              总数 {{ filteredDecks.length }} / {{ decks.length }}
+              {{ t('deck.totalCounter', { filtered: filteredDecks.length, total: decks.length }) }}
             </div>
           </div>
-          <button class="btn-create" @click="handleCreate">+ 新建卡组</button>
+          <button class="btn-create" @click="handleCreate">{{ t('deck.create') }}</button>
         </div>
 
         <div class="main-body">
@@ -134,7 +136,7 @@ onMounted(() => {
                   <div class="deck-name">{{ deck.name }}</div>
                 </div>
                 <div class="deck-tags">
-                  <span v-if="deck.tags && deck.tags.length === 0" class="no-tags">无标签</span>
+                  <span v-if="deck.tags && deck.tags.length === 0" class="no-tags">{{ t('deck.noTags') }}</span>
                   <span
                     v-for="tag in deck.tags"
                     :key="`${tag.namespace}:${tag.value}`"
@@ -145,8 +147,8 @@ onMounted(() => {
                 </div>
               </div>
               <div class="deck-actions">
-                <button class="action-btn edit-btn" @click="handleEdit(deck.id)">编辑</button>
-                <button class="action-btn delete-btn" @click="handleDelete(deck.id)">删除</button>
+                <button class="action-btn edit-btn" @click="handleEdit(deck.id)">{{ t('deck.edit') }}</button>
+                <button class="action-btn delete-btn" @click="handleDelete(deck.id)">{{ t('deck.delete') }}</button>
               </div>
             </div>
           </div>
