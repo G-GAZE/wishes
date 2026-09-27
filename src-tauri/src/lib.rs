@@ -178,6 +178,15 @@ fn delete_card(id: u64, state: State<AppState>) -> Result<(), String> {
     Ok(())
 }
 
+/// 获取显式引用指定卡片的卡组列表.
+/// 
+/// 用于删除卡片前在前端提示可能受影响的卡组.
+#[tauri::command]
+fn get_card_referencing_decks(id: u64, state: State<AppState>) -> Result<Vec<DeckSummary>, String> {
+    let decks = state.card_manager.referencing_decks(CardId(id));
+    Ok(decks.iter().map(|deck| DeckSummary::from(deck.as_ref())).collect())
+}
+
 /// 获取所有卡组信息.
 #[tauri::command]
 fn list_decks(state: State<AppState>) -> Result<Vec<DeckSummary>, String> {
@@ -268,6 +277,7 @@ pub fn run() {
             create_card,
             update_card,
             delete_card,
+            get_card_referencing_decks,
             list_decks,
             list_decks_by_tags,
             create_deck,

@@ -34,6 +34,15 @@ export async function updateCard(req: CardUpdateRequest): Promise<CardSummary> {
   return await invoke<CardSummary>("update_card", { req });
 }
 
+export interface DeckReference {
+  id: number,
+  name: string,
+}
+
 export async function deleteCard(id: number): Promise<void> {
   return await invoke("delete_card", { id });
+}
+
+export async function getCardReferencingDecks(id: number): Promise<DeckReference[]> {
+  return await invoke<DeckReference[]>("get_card_referencing_decks", { id });
 }

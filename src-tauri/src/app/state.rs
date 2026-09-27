@@ -96,7 +96,7 @@ impl AppState {
         let banner_registry = Arc::new(banner_registry);
 
         // 初始化管理器
-        let card_manager = CardManager::new(card_registry.clone(), data_dir.join("cards"));
+        let card_manager = CardManager::new(card_registry.clone(), deck_registry.clone(), data_dir.join("cards"));
         let deck_manager = DeckManager::new(
             deck_registry.clone(),
             card_registry.clone(),
