@@ -1,0 +1,41 @@
+{
+  "common": {
+    "loading": "加载中…",
+    "open": "打开",
+    "cancel": "取消",
+    "back": "返回"
+  },
+  "nav": {
+    "home": "主页",
+    "gacha": "抽卡",
+    "catalog": "图鉴",
+    "settings": "设置",
+    "versionTip": "v{version} - 测试版本, 不代表正式版品质"
+  },
+  "settings": {
+    "title": "设置",
+    "subtitle": "应用偏好与数据管理",
+    "language": "语言",
+    "dataDir": "数据目录",
+    "logDir": "日志目录",
+    "darkMode": "深色模式",
+    "darkModeEnabled": "已启用",
+    "about": "关于",
+    "aboutSummary": "项目简介与开源协议",
+    "error": {
+      "loadPaths": "获取数据目录路径失败: {error}",
+      "openDataDir": "打开数据目录失败: {error}",
+      "openLogDir": "打开日志目录失败: {error}"
+    }
+  },
+  "about": {
+    "introTitle": "项目简介",
+    "introP1": "{brand} 是一款基于 Tauri 2 和 Vue 3 构建的通用、可高度自定义的模拟抽卡工具。",
+    "introP2": "通过统一的标签系统管理卡片、卡组、卡池与抽卡逻辑，你可以在同一应用内自由搭建并模拟几乎任何游戏的抽卡机制，甚至更广义的随机系统。",
+    "licenseTitle": "开源协议",
+    "licenseP1": "本项目基于 {license} (GPL-3.0-or-later) 协议开源。",
+    "licenseP2": "任何基于 Wishes 的衍生项目必须开放其源代码，并保留原始的版权声明与许可证声明。",
+    "repoTitle": "项目地址",
+    "repoLabel": "GitHub: "
+  }
+}

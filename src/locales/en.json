@@ -1,0 +1,41 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "open": "Open",
+    "cancel": "Cancel",
+    "back": "Back"
+  },
+  "nav": {
+    "home": "Home",
+    "gacha": "Wishes",
+    "catalog": "Catalog",
+    "settings": "Settings",
+    "versionTip": "v{version} - test build, not representative of release quality"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Application preferences and data management",
+    "language": "Language",
+    "dataDir": "Data Directory",
+    "logDir": "Log Directory",
+    "darkMode": "Dark Mode",
+    "darkModeEnabled": "Enabled",
+    "about": "About",
+    "aboutSummary": "Project introduction and license",
+    "error": {
+      "loadPaths": "Failed to load data directory paths: {error}",
+      "openDataDir": "Failed to open the data directory: {error}",
+      "openLogDir": "Failed to open the log directory: {error}"
+    }
+  },
+  "about": {
+    "introTitle": "About",
+    "introP1": "{brand} is a versatile and highly customizable gacha simulation tool built with Tauri 2 and Vue 3.",
+    "introP2": "With a unified tag system managing cards, decks, banners and wish logic, you can freely build and simulate the gacha mechanics of almost any game — or any random system more broadly — within a single application.",
+    "licenseTitle": "License",
+    "licenseP1": "This project is open-sourced under the {license}.",
+    "licenseP2": "Any derivative project based on Wishes must open-source its source code and retain the original copyright and license notices.",
+    "repoTitle": "Project Links",
+    "repoLabel": "GitHub: "
+  }
+}

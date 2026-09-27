@@ -1,0 +1,41 @@
+{
+  "common": {
+    "loading": "読み込み中…",
+    "open": "開く",
+    "cancel": "キャンセル",
+    "back": "戻る"
+  },
+  "nav": {
+    "home": "ホーム",
+    "gacha": "ガチャ",
+    "catalog": "図鑑",
+    "settings": "設定",
+    "versionTip": "v{version} - テスト版であり、正式版の品質を示すものではありません"
+  },
+  "settings": {
+    "title": "設定",
+    "subtitle": "アプリ設定とデータ管理",
+    "language": "言語",
+    "dataDir": "データディレクトリ",
+    "logDir": "ログディレクトリ",
+    "darkMode": "ダークモード",
+    "darkModeEnabled": "有効",
+    "about": "このアプリについて",
+    "aboutSummary": "プロジェクト紹介とライセンス",
+    "error": {
+      "loadPaths": "データディレクトリの取得に失敗しました: {error}",
+      "openDataDir": "データディレクトリを開けませんでした: {error}",
+      "openLogDir": "ログディレクトリを開けませんでした: {error}"
+    }
+  },
+  "about": {
+    "introTitle": "プロジェクト紹介",
+    "introP1": "{brand} は、Tauri 2 と Vue 3 で構築された、汎用的で高度にカスタマイズ可能なガチャシミュレーションツールです。",
+    "introP2": "統一されたタグシステムでカード・デッキ・バナー・ガチャロジックを管理し、ほぼあらゆるゲームのガチャ機構、さらにはより広義のランダムシステムまで、同一アプリ内で自由に構築・模擬できます。",
+    "licenseTitle": "ライセンス",
+    "licenseP1": "本プロジェクトは {license} の下でオープンソース化されています。",
+    "licenseP2": "Wishes に基づく派生プロジェクトは、そのソースコードを公開し、元の著作権表示およびライセンス表示を保持する必要があります。",
+    "repoTitle": "プロジェクトリンク",
+    "repoLabel": "GitHub: "
+  }
+}
