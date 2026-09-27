@@ -56,6 +56,23 @@ export function useWish() {
     }
   }
 
+  /** 执行十连抽卡 (后端批量), 并更新相关状态和历史记录 */
+  async function doWishTen(bannerId: number): Promise<WishResponse[]> {
+    loading.value = true;
+    error.value = null;
+    try {
+      const results = await invoke<WishResponse[]>("wish_ten", { bannerId });
+      history.value.unshift(...results);
+      await loadBannerInfo(bannerId);
+      return results;
+    } catch (e) {
+      error.value = `抽卡失败: ${e}`;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   return {
     banners,
     currentBannerInfo,
@@ -66,5 +83,6 @@ export function useWish() {
     loadBanners,
     loadBannerInfo,
     doWish,
+    doWishTen,
   }
 }

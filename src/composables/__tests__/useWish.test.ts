@@ -38,4 +38,22 @@ describe("useWish", () => {
     expect(loading.value).toBe(false);
     expect(error.value).toContain("Test error");
   });
+
+  it("should handle successful ten wish via batch command", async () => {
+    const mockResults = Array.from({ length: 10 }, (_, i) => ({
+      id: i + 1,
+      content: `Test-Card-${i}`,
+      tags: [],
+      event_tags: [],
+    }));
+    (invoke as any).mockResolvedValue(mockResults);
+
+    const { doWishTen, loading, history } = useWish();
+    const results = await doWishTen(1);
+
+    expect(invoke).toHaveBeenCalledWith("wish_ten", { bannerId: 1 });
+    expect(results).toHaveLength(10);
+    expect(loading.value).toBe(false);
+    expect(history.value[0]).toEqual(mockResults[0]);
+  });
 });

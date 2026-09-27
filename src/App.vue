@@ -12,15 +12,17 @@ import BottomNav from "./components/BottomNav.vue";
 import { useWish } from "./composables/useWish";
 import type { WishResponse } from "./types.ts";
 import WishResultOverlay from "./components/WishResultOverlay.vue";
-import { GlobalThemeOverrides, NConfigProvider, darkTheme, NDialogProvider, NMessageProvider } from "naive-ui";
+import { GlobalThemeOverrides, NConfigProvider, darkTheme, NDialogProvider, NMessageProvider, createDiscreteApi } from "naive-ui";
 
 const {
   banners,
   currentBannerInfo,
   currentWish,
+  error,
   loadBanners,
   loadBannerInfo,
   doWish,
+  doWishTen,
 } = useWish();
 
 const selectedBannerId = ref<number | null>(null);
@@ -79,26 +81,19 @@ async function handleWishSingle() {
     isTenWish.value = false;
     showWishResultOverlay.value = true;
   } catch (e) {
-    // 无额外处理
-    // TODO: 提示弹窗
+    discreteMessage.error(error.value ?? String(e));
   }
 }
 
-/** 十连处理 (顺序执行, 后续优化为并行执行) */
+/** 十连处理 (后端批量执行) */
 async function handleWishTen() {
   if (!selectedBannerId.value) return;
   try {
-    // 循环十次
-    // TODO: 并行接口
-    tenWishResults.value = [];
-    for (let i = 0; i < 10; i++) {
-      const result = await doWish(selectedBannerId.value);
-      tenWishResults.value.push(result);
-    }
+    tenWishResults.value = await doWishTen(selectedBannerId.value);
     isTenWish.value = true;
     showWishResultOverlay.value = true;
   } catch (e) {
-    // TODO: 提示弹窗
+    discreteMessage.error(error.value ?? String(e));
   }
 }
 
@@ -169,6 +164,11 @@ const themeOverrides: GlobalThemeOverrides = {
     },
   },
 };
+
+/** 独立提示 API (App 根组件不在 NMessageProvider 上下文内) */
+const { message: discreteMessage } = createDiscreteApi(['message'], {
+  configProviderProps: { theme: darkTheme, themeOverrides },
+});
 </script>
 
 
