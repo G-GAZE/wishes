@@ -173,7 +173,7 @@ impl BannerService {
 
         Ok(WishResult {
             card: tagged_card,
-            event_tags: result.event_tags.iter().cloned().collect(),
+            event_tags: result.event_tags.to_vec(),
         })
     }
 

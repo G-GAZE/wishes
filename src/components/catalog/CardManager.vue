@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useCardManager } from '../../composables/useCardManager';
-import { CardCreateRequest, CardSummary, CardUpdateRequest } from '../../api/card';
+import { CardCreateRequest, CardSummary, CardUpdateRequest, getCardReferencingDecks } from '../../api/card';
+import type { DeckReference } from '../../api/card';
 import { Tag } from '../../types';
 import CardForm from '../CardForm.vue';
 import { useTagStyles } from '../../composables/useTagStyles.ts';
@@ -39,6 +40,8 @@ const formData = ref<CardCreateRequest>({
 // 删除确认
 const showDeleteConfirm = ref(false);
 const deletingCard = ref<CardSummary | null>(null);
+// 删除前查询到的引用卡组
+const referencingDecks = ref<DeckReference[]>([]);
 
 // 标签筛选浮窗
 const showTagFilterPopup = ref(false);
@@ -150,14 +153,20 @@ async function handleSave() {
   }
 }
 
-function confirmDelete(card: CardSummary) {
+async function confirmDelete(card: CardSummary) {
   deletingCard.value = card;
+  try {
+    referencingDecks.value = await getCardReferencingDecks(card.id);
+  } catch (e) {
+    referencingDecks.value = [];
+  }
   showDeleteConfirm.value = true;
 }
 
 function closeDeleteConfirm() {
   showDeleteConfirm.value = false;
   deletingCard.value = null;
+  referencingDecks.value = [];
 }
 
 async function handleDelete() {
@@ -923,6 +932,29 @@ const selectedCardTagClasses = computed(() => {
 .warning {
   color: #e74c3c;
   font-size: 1.3rem;
+}
+.confirm-refs {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border: 1px solid #2a3340;
+  border-radius: 6px;
+  background: rgba(231, 76, 60, 0.08);
+}
+.ref-hint {
+  color: #e0a96d;
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+}
+.ref-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #e4e8ef;
+  font-size: 1.2rem;
+  max-height: 12rem;
+  overflow-y: auto;
+}
+.ref-list li {
+  margin: 2px 0;
 }
 
 .loading-state,

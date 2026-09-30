@@ -158,7 +158,7 @@ npm run tauri build
 ## その他のドキュメント
 
 - [**`Wishes` のコアコンセプト**](concepts.ja.md): `Wishes` の柔軟性は、いくつかの小さく汎用的な抽象概念から生まれています。これらの概念を理解すれば、**任意の** バナーをカスタマイズできます。
-- [**`data/` ディレクトリ構造の説明**]()
+- **`data/` ディレクトリ構造の説明** (準備中)
 - [**简体中文 README**](../README.md)
 - [**English README**](README.en.md)
 
@@ -189,5 +189,5 @@ npm run tauri build
 `Wishes` に基づく派生プロジェクトは、そのソースコードを公開し、元の著作権表示およびライセンス表示を保持する必要があります。
 
 <div align="center">
-  <sub>Copyright (C) 2026 G-GAZE and contributors · <a href="LICENSE">GPL-3.0-or-later</a></sub>
+  <sub>Copyright (C) 2026 G-GAZE and contributors · <a href="../LICENSE">GPL-3.0-or-later</a></sub>
 </div>

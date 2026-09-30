@@ -158,7 +158,7 @@ Build artifacts are located in src-tauri/target/release/bundle, generating platf
 ## More Documentation
 
 - [**Wishes Core Concepts**](concepts.en.md): `Wishes`' flexibility comes from a set of small and universal abstractions. Understanding these concepts allows you to customize **any** banner.
-- [**`data/` Directory Structure**]()
+- **`data/` Directory Structure** (TBD)
 - [**简体中文 README**](../README.md)
 - [**日本語 README**](README.ja.md)
 
@@ -189,5 +189,5 @@ If the copyright holder has objections to the use of such assets, please contact
 Any derivative project based on `Wishes` **must** open-source its code and retain the original copyright and license notices.
 
 <div align="center">
-  <sub>Copyright (C) 2026 G-GAZE and contributors · <a href="LICENSE">GPL-3.0-or-later</a></sub>
+  <sub>Copyright (C) 2026 G-GAZE and contributors · <a href="../LICENSE">GPL-3.0-or-later</a></sub>
 </div>

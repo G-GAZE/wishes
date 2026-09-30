@@ -22,24 +22,13 @@ const TYPE_LIGHT_CONE: &str = "light_cone";
 /// 崩坏星穹铁道角色 UP 卡池逻辑状态.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(default)]
+#[derive(Default)]
 struct StarrailCharacterUpState {
     counter_5: u16,
     counter_4: u16,
     is_pity_5: bool,
     is_pity_4: bool,
     next_char_4: bool,
-}
-
-impl Default for StarrailCharacterUpState {
-    fn default() -> Self {
-        Self {
-            counter_5: 0,
-            counter_4: 0,
-            is_pity_5: false,
-            is_pity_4: false,
-            next_char_4: false,
-        }
-    }
 }
 
 /// 崩坏星穹铁道角色 UP 卡池抽卡逻辑.
@@ -231,7 +220,7 @@ mod tests {
         // 5 星计数重置
         assert_eq!(state["counter_5"].as_u64().unwrap(), 0);
         // up 保底重置
-        assert_eq!(state["is_pity_5"].as_bool().unwrap(), false);
+        assert!(!state["is_pity_5"].as_bool().unwrap());
         // 4 星计数正常 +1
         assert_eq!(state["counter_4"].as_u64().unwrap(), 1);
     }
