@@ -2,7 +2,7 @@
 
 use std::{path::PathBuf, sync::Arc, fs};
 use anyhow::{Context, Result};
-use crate::{domain::{card::{Card, TaggedCard}, ids::CardId, tag::Tag}, infrastructure::registry::CardRegistry};
+use crate::{domain::{card::{Card, TaggedCard}, deck::{MembershipCondition, TaggedDeck}, ids::CardId, tag::Tag}, infrastructure::registry::{CardRegistry, DeckRegistry}};
 
 
 /// 卡片管理器.
@@ -11,14 +11,17 @@ use crate::{domain::{card::{Card, TaggedCard}, ids::CardId, tag::Tag}, infrastru
 pub struct CardManager {
     /// `CardRegistry` 引用.
     registry: Arc<CardRegistry>,
+    /// `DeckRegistry` 引用, 用于删除前的引用检查.
+    deck_registry: Arc<DeckRegistry>,
     /// 卡片存储根目录, 应为 `data/cards`
     base_path: PathBuf,             // data/cards 目录
 }
 
 impl CardManager {
-    pub fn new(registry: Arc<CardRegistry>, base_path: PathBuf) -> Self {
+    pub fn new(registry: Arc<CardRegistry>, deck_registry: Arc<DeckRegistry>, base_path: PathBuf) -> Self {
         Self {
             registry,
+            deck_registry,
             base_path,
         }
     }
@@ -124,14 +127,42 @@ impl CardManager {
         Ok(new_card)
     }
 
+    /// 查询显式引用指定卡片的卡组列表.
+    /// 
+    /// 仅统计卡组成员规则中通过 `IncludeIds` 显式引用的卡片;
+    /// 通过标签规则动态包含的卡片不计入.
+    pub fn referencing_decks(&self, id: CardId) -> Vec<Arc<TaggedDeck>> {
+        self.deck_registry
+            .all_decks()
+            .into_iter()
+            .filter(|deck| deck.inner.members.conditions.iter().any(|cond| matches!(
+                cond,
+                MembershipCondition::IncludeIds { ids } if ids.contains(&id)
+            )))
+            .collect()
+    }
+
     /// 删除指定 Id 的卡片.
     /// 
     /// # 参数
     /// - `id`: 要删除卡片的 Id
     /// 
     /// 若删除卡片文件失败, 则不会删除卡片并返回错误.
+    /// 若卡片被 Deck 成员规则显式引用, 仅记录警告日志, 不阻止删除.
     pub fn delete_card(&self, id: CardId) -> Result<()> {
-        // TODO: 检查 Card 是否被 Deck 引用
+        // 被 Deck 显式引用时记录警告 (不阻止删除)
+        let referencing_decks: Vec<u64> = self.referencing_decks(id)
+            .iter()
+            .map(|deck| deck.inner.id.0)
+            .collect();
+
+        if !referencing_decks.is_empty() {
+            tracing::warn!(
+                card_id = %id.0,
+                referencing_decks = ?referencing_decks,
+                "Card 被 Deck 引用, 删除后相关卡组将不再包含该卡片"
+            );
+        }
 
         if let Some(path) = self.registry.get_path(id) {
             if path.exists() {

@@ -178,6 +178,15 @@ fn delete_card(id: u64, state: State<AppState>) -> Result<(), String> {
     Ok(())
 }
 
+/// 获取显式引用指定卡片的卡组列表.
+/// 
+/// 用于删除卡片前在前端提示可能受影响的卡组.
+#[tauri::command]
+fn get_card_referencing_decks(id: u64, state: State<AppState>) -> Result<Vec<DeckSummary>, String> {
+    let decks = state.card_manager.referencing_decks(CardId(id));
+    Ok(decks.iter().map(|deck| DeckSummary::from(deck.as_ref())).collect())
+}
+
 /// 获取所有卡组信息.
 #[tauri::command]
 fn list_decks(state: State<AppState>) -> Result<Vec<DeckSummary>, String> {
@@ -230,7 +239,7 @@ pub fn run() {
         .setup(|app| {
             let handle = app.handle();
 
-            let log_dir = get_or_create_log_dir(&handle)
+            let log_dir = get_or_create_log_dir(handle)
                 .with_context(|| "获取日志目录失败")?;
             let log_guard = crate::utils::logging::init(&log_dir)
                 .with_context(|| "初始化日志系统失败")?;
@@ -239,17 +248,16 @@ pub fn run() {
 
             tracing::info!(log_dir = %log_dir.display(), "日志系统已初始化");
 
-            let data_dir = get_or_create_data_dir(&handle)
+            let data_dir = get_or_create_data_dir(handle)
                 .with_context(|| "获取数据目录失败")?;
-            let db_dir = get_or_create_db_dir(&handle)
+            let db_dir = get_or_create_db_dir(handle)
                 .with_context(|| "获取数据库目录失败")?;
             
-            let app_state = AppState::load(&data_dir, &db_dir).map_err(|e| {
+            let app_state = AppState::load(&data_dir, &db_dir).inspect_err(|e| {
                 tracing::error!("Wishes 启动失败");
                 for cause in e.chain() {
                     tracing::error!("- {}", cause);
                 }
-                e
             })?;
             app.manage(app_state);
             Ok(())
@@ -269,6 +277,7 @@ pub fn run() {
             create_card,
             update_card,
             delete_card,
+            get_card_referencing_decks,
             list_decks,
             list_decks_by_tags,
             create_deck,

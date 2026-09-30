@@ -32,6 +32,9 @@ jobs:
       - name: Rust backend tests
         run: cargo test --manifest-path src-tauri/Cargo.toml
 
+      - name: Rust clippy
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+
   test-frontend:
     runs-on: ubuntu-latest
     steps:
@@ -48,3 +51,6 @@ jobs:
       
       - name: Run frontend tests
         run: npm run test:unit
+
+      - name: Type check and build
+        run: npm run build

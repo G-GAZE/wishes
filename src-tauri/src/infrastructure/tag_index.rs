@@ -14,6 +14,15 @@ pub struct TagIndex<Id> {
     tag_to_ids: DashMap<Tag, HashSet<Id>>
 }
 
+impl<Id> Default for TagIndex<Id>
+where
+    Id: std::hash::Hash + Eq + Clone + Copy + Send + Sync
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<Id> TagIndex<Id>
 where
     Id: std::hash::Hash + Eq + Clone + Copy + Send + Sync
@@ -28,7 +37,7 @@ where
     /// 每个标签都会建立到该 Id 的映射.
     pub fn insert(&self, id: Id, tags: &[Tag]) {
         for tag in tags {
-            self.tag_to_ids.entry(tag.clone()).or_insert_with(HashSet::new).insert(id);
+            self.tag_to_ids.entry(tag.clone()).or_default().insert(id);
         }
     }
 

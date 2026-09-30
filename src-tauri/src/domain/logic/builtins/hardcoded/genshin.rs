@@ -265,7 +265,7 @@ mod tests {
         // 5 星计数重置
         assert_eq!(state["counter_5"].as_u64().unwrap(), 0);
         // up 保底重置
-        assert_eq!(state["is_pity_5"].as_bool().unwrap(), false);
+        assert!(!state["is_pity_5"].as_bool().unwrap());
         // 4 星计数正常 +1
         assert_eq!(state["counter_4"].as_u64().unwrap(), 1);
     }

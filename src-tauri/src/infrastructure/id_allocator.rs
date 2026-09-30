@@ -17,6 +17,12 @@ pub struct IdAllocator<Id> {
     _marker: PhantomData<Id>
 }
 
+impl<Id> Default for IdAllocator<Id> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<Id> IdAllocator<Id> {
     /// 创建一个新的 Id 分配器.
     pub const fn new() -> Self {

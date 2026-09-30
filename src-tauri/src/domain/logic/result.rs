@@ -11,6 +11,12 @@ pub struct LogicResult {
     // pub appointed_card: Option<CardId>
 }
 
+impl Default for LogicResult {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LogicResult {
     /// 创建空结果.
     pub fn new() -> Self {

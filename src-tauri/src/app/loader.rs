@@ -24,6 +24,12 @@ use crate::{
 /// 所有方法均为静态风格.
 pub struct Loader;
 
+impl Default for Loader {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Loader {
     /// 创建一个新的加载器.
     pub fn new() -> Self {
@@ -221,7 +227,7 @@ impl Loader {
                 if let LogicVariant::Hardcoded { executor_name } = &tagged_logic_def.variant {
                     let mut missing = Vec::new();
                     let combos = logic_registry.hardcoded_possible_output_combinations(executor_name)
-                        .unwrap_or_else(|| Vec::new());
+                        .unwrap_or_default();
                     for combo in combos {
                         let candidates = tagged_deck.query_cards(card_registry, &combo.0, &combo.1);
                         if candidates.is_empty() {
