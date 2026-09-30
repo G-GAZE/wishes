@@ -114,15 +114,20 @@ impl HardcodedExecutor for StarrailCharacterUpLogic {
         rng: &mut ChaCha12Rng,
     ) -> LogicResult
     {
-        let current: StarrailCharacterUpState = match serde_json::from_value(state.clone()) {
-            Ok(s) => s,
-            Err(e) => {
-                tracing::error!(
-                    error = %e,
-                    state = %state,
-                    "StarrailCharacterUpState 反序列化失败, 回退到 Default"
-                );
-                StarrailCharacterUpState::default()
+        let current: StarrailCharacterUpState = if state.is_null() {
+            // 首次抽卡, 尚无持久化状态
+            StarrailCharacterUpState::default()
+        } else {
+            match serde_json::from_value(state.clone()) {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::error!(
+                        error = %e,
+                        state = %state,
+                        "StarrailCharacterUpState 反序列化失败, 回退到 Default"
+                    );
+                    StarrailCharacterUpState::default()
+                }
             }
         };
 

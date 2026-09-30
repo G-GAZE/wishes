@@ -70,6 +70,26 @@ fn wish(banner_id: u64, state: State<AppState>) -> Result<WishResponse, String> 
         .map_err(|e| log_command_err("wish", e))
 }
 
+/// 执行十连抽卡 (后端批量, 保证顺序与状态一致性)
+/// 
+/// # 参数
+/// - `banner_id`: 目标卡池的 Id (`u64`).
+/// - `state`: 当前应用状态.
+/// 
+/// # 返回值
+/// 按抽取顺序返回 10 个 `WishResponse`; 任一次抽取失败则整体返回错误.
+#[tauri::command]
+fn wish_ten(banner_id: u64, state: State<AppState>) -> Result<Vec<WishResponse>, String> {
+    let banner_id = BannerId(banner_id);
+    let mut results = Vec::with_capacity(10);
+    for _ in 0..10 {
+        let result = state.wish(banner_id)
+            .map_err(|e| log_command_err("wish_ten", e))?;
+        results.push(WishResponse::new(result));
+    }
+    Ok(results)
+}
+
 /// 获取所有卡池的摘要列表.
 /// 
 /// 返回 `Vec<BannerSummary>` 供前端展示.
@@ -265,6 +285,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             wish,
+            wish_ten,
             get_banners,
             get_banner_info,
             get_catalog_stats,

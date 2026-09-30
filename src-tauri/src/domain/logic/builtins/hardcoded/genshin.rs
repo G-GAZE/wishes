@@ -157,15 +157,20 @@ impl HardcodedExecutor for GenshinCharacterUpLogic {
         rng: &mut ChaCha12Rng,
     ) -> LogicResult
     {
-        let current: GenshinCharacterUpState = match serde_json::from_value(state.clone()) {
-            Ok(s) => s,
-            Err(e) => {         // 反序列化失败时, 回退到 Default 并记录错误.
-                tracing::error!(
-                    error = %e,
-                    state = %state,
-                    "GenshinCharacterUpState 反序列化失败, 回退到 Default"
-                );
-                GenshinCharacterUpState::default()
+        let current: GenshinCharacterUpState = if state.is_null() {
+            // 首次抽卡, 尚无持久化状态
+            GenshinCharacterUpState::default()
+        } else {
+            match serde_json::from_value(state.clone()) {
+                Ok(s) => s,
+                Err(e) => {         // 反序列化失败时, 回退到 Default 并记录错误.
+                    tracing::error!(
+                        error = %e,
+                        state = %state,
+                        "GenshinCharacterUpState 反序列化失败, 回退到 Default"
+                    );
+                    GenshinCharacterUpState::default()
+                }
             }
         };
 
