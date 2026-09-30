@@ -99,6 +99,7 @@
     "deleteConfirmTitle": "Confirm Deletion",
     "deleteConfirmContent": "Delete card \"{name}\"?",
     "deleteWarning": "⚠ This action cannot be undone",
+    "deleteRefDeckWarning": "This card is explicitly referenced by the following decks, and once it is deleted, these decks will no longer contain it:",
     "detailEmpty": "Select a card to view details",
     "noMatch": "No matching cards",
     "deleteFailed": "Failed to delete the card",
