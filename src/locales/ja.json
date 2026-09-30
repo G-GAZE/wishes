@@ -1,0 +1,177 @@
+{
+  "common": {
+    "loading": "読み込み中…",
+    "open": "開く",
+    "cancel": "キャンセル",
+    "back": "戻る"
+  },
+  "nav": {
+    "home": "ホーム",
+    "gacha": "ガチャ",
+    "catalog": "図鑑",
+    "settings": "設定",
+    "versionTip": "v{version} - テスト版であり、正式版の品質を示すものではありません"
+  },
+  "settings": {
+    "title": "設定",
+    "subtitle": "アプリ設定とデータ管理",
+    "language": "言語",
+    "dataDir": "データディレクトリ",
+    "logDir": "ログディレクトリ",
+    "darkMode": "ダークモード",
+    "darkModeEnabled": "有効",
+    "about": "このアプリについて",
+    "aboutSummary": "プロジェクト紹介とライセンス",
+    "error": {
+      "loadPaths": "データディレクトリの取得に失敗しました: {error}",
+      "openDataDir": "データディレクトリを開けませんでした: {error}",
+      "openLogDir": "ログディレクトリを開けませんでした: {error}"
+    }
+  },
+  "about": {
+    "introTitle": "プロジェクト紹介",
+    "introP1": "{brand} は、Tauri 2 と Vue 3 で構築された、汎用的で高度にカスタマイズ可能なガチャシミュレーションツールです。",
+    "introP2": "統一されたタグシステムでカード・デッキ・バナー・ガチャロジックを管理し、ほぼあらゆるゲームのガチャ機構、さらにはより広義のランダムシステムまで、同一アプリ内で自由に構築・模擬できます。",
+    "licenseTitle": "ライセンス",
+    "licenseP1": "本プロジェクトは {license} の下でオープンソース化されています。",
+    "licenseP2": "Wishes に基づく派生プロジェクトは、そのソースコードを公開し、元の著作権表示およびライセンス表示を保持する必要があります。",
+    "repoTitle": "プロジェクトリンク",
+    "repoLabel": "GitHub: "
+  },
+  "home": {
+    "title": "ホーム",
+    "subtitle": "バナーを選んでガチャを始めよう！"
+  },
+  "gacha": {
+    "noBannerSelected": "バナー未選択",
+    "deckLabel": "デッキ",
+    "logicLabel": "ロジック",
+    "totalCounterLabel": "累計回数",
+    "loadingInfo": "バナー情報を読み込み中…",
+    "wishSingle": "1回ガチャ",
+    "wishTen": "10回ガチャ"
+  },
+  "catalog": {
+    "title": "図鑑",
+    "subtitle": "カード・デッキ・ロジック・バナーを管理",
+    "tabs": {
+      "cards": "カード",
+      "decks": "デッキ",
+      "logics": "ロジック",
+      "banners": "バナー"
+    }
+  },
+  "wish": {
+    "rarity": "レアリティ {rarity} ： {count}",
+    "skip": "スキップ >",
+    "clickContinue": "空白をクリックして続行",
+    "clickClose": "空白をクリックして閉じる",
+    "loadBannersFailed": "バナー一覧の読み込みに失敗しました: {error}",
+    "loadBannerInfoFailed": "バナー情報の読み込みに失敗しました: {error}",
+    "drawFailed": "ガチャに失敗しました: {error}"
+  },
+  "card": {
+    "name": "名前",
+    "namePlaceholder": "カード名を入力",
+    "tags": "タグ",
+    "noTags": "タグなし",
+    "availableTags": "選択可能なタグ",
+    "newTag": "新しいタグ",
+    "namespacePlaceholder": "名前空間",
+    "valuePlaceholder": "値",
+    "addTag": "＋ 追加",
+    "searchPlaceholder": "カード内容を検索…",
+    "totalCounter": "合計 {filtered} / {total}",
+    "filterTags": "タグで絞り込み",
+    "activeFilterTags": "{count} 件のタグで絞り込み",
+    "filterPopupHint": "絞り込むタグを選択",
+    "filterModeAnd": "すべて含む",
+    "filterModeOr": "いずれかを含む",
+    "clear": "クリア",
+    "confirm": "確認",
+    "create": "＋ 新規カード",
+    "edit": "編集",
+    "delete": "削除",
+    "editTitle": "カードを編集",
+    "createTitle": "カードを作成",
+    "save": "保存",
+    "createAction": "作成",
+    "deleteConfirmTitle": "削除の確認",
+    "deleteConfirmContent": "カード「{name}」を削除しますか？",
+    "deleteWarning": "⚠ この操作は取り消せません",
+    "detailEmpty": "カードを選択して詳細を表示",
+    "noMatch": "一致するカードがありません",
+    "deleteFailed": "カードの削除に失敗しました",
+    "deleteError": "カードの削除に失敗しました: {error}",
+    "loadFailed": "カードの読み込みに失敗しました: {error}",
+    "createFailed": "カードの作成に失敗しました: {error}",
+    "updateFailed": "カードの更新に失敗しました: {error}"
+  },
+  "logic": {
+    "managerTitle": "ロジック管理"
+  },
+  "banner": {
+    "managerTitle": "バナー管理"
+  },
+  "deck": {
+    "searchPlaceholder": "デッキを検索…",
+    "totalCounter": "合計 {filtered} / {total}",
+    "create": "＋ 新規デッキ",
+    "noTags": "タグなし",
+    "edit": "編集",
+    "delete": "削除",
+    "deleteConfirmTitle": "削除の確認",
+    "deleteConfirmContent": "このデッキを削除しますか？",
+    "deleteSuccess": "削除しました",
+    "deleteFailed": "デッキの削除に失敗しました",
+    "editorTitleCreate": "新規デッキ",
+    "editorTitleEdit": "デッキを編集",
+    "nameLabel": "デッキ名",
+    "namePlaceholder": "デッキ名を入力",
+    "tagsLabel": "タグ",
+    "membersLabel": "メンバー条件",
+    "membersHint": "デッキに含めるカードを決定します",
+    "deleteCondition": "削除",
+    "addCondition": "＋ 条件を追加",
+    "eventGroupsLabel": "イベントグループ条件",
+    "eventGroupsHint": "各イベントグループに含めるカードを決定します",
+    "removeGroup": "グループを削除",
+    "addGroup": "＋ イベントグループを追加",
+    "deleteMemberConfirm": "このメンバー条件を削除しますか？",
+    "deleteEventGroupTitle": "イベントグループの削除",
+    "deleteEventGroupWithConds": "イベントグループ「{tag}」を削除しますか？配下の {count} 個の条件も削除されます。",
+    "deleteEventGroup": "イベントグループ「{tag}」を削除しますか？",
+    "deleteConditionConfirm": "この条件を削除しますか？",
+    "save": "保存",
+    "eventGroupModalTitle": "イベントグループを追加",
+    "eventGroupTypeLabel": "イベントグループの種類",
+    "eventGroupTypePlaceholder": "イベントグループの種類を選択",
+    "eventGroupExistsHint": "既存のイベントグループは重複追加できません",
+    "eventGroupConfirm": "追加する",
+    "loadFailed": "デッキの読み込みに失敗しました: {error}",
+    "createFailed": "デッキの作成に失敗しました: {error}",
+    "updateFailed": "デッキの更新に失敗しました: {error}",
+    "deleteError": "デッキの削除に失敗しました: {error}"
+  },
+  "condition": {
+    "all": "すべて",
+    "tagAll": "すべてのタグを含む",
+    "tagAny": "いずれかのタグを含む",
+    "filterTagAll": "すべてのタグを保持",
+    "filterTagAny": "いずれかのタグを保持",
+    "includeCards": "カードを含める",
+    "excludeCards": "カードを除外",
+    "selectedCards": "{count} 枚選択中",
+    "selectCards": "カードを選択",
+    "searchPlaceholder": "内容またはタグで検索（スペース区切り）",
+    "clearSearch": "クリア",
+    "selectedCount": "{count} 枚選択中",
+    "confirmSelection": "選択を確定"
+  },
+  "eventTag": {
+    "standard": "常設",
+    "up": "確率アップ",
+    "fes": "フェス限定",
+    "appoint": "定軌"
+  }
+}

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { EditableCondition } from '../../api/decks';
 import TagSelector from '../common/TagSelector.vue';
 import CardSelectorModal from './CardSelectorModal.vue';
@@ -20,15 +21,17 @@ const condition = computed({
   set: (val) => emit('update:modelValue', val),
 });
 
-const typeOptions: SelectOption[] = [
-  { label: '全选',           value: 'all' },
-  { label: '包含所有标签',   value: 'tag_all' },
-  { label: '包含任意标签',   value: 'tag_any' },
-  { label: '保留所有标签',   value: 'filter_tag_all' },
-  { label: '保留任意标签',   value: 'filter_tag_any' },
-  { label: '包含卡片',       value: 'include_ids' },
-  { label: '排除卡片',       value: 'exclude_ids' },
-];
+const { t } = useI18n();
+
+const typeOptions = computed<SelectOption[]>(() => [
+  { label: t('condition.all'),           value: 'all' },
+  { label: t('condition.tagAll'),        value: 'tag_all' },
+  { label: t('condition.tagAny'),        value: 'tag_any' },
+  { label: t('condition.filterTagAll'),  value: 'filter_tag_all' },
+  { label: t('condition.filterTagAny'),  value: 'filter_tag_any' },
+  { label: t('condition.includeCards'),  value: 'include_ids' },
+  { label: t('condition.excludeCards'),  value: 'exclude_ids' },
+]);
 
 // 条件类型收窄
 const isTagType = computed(() => 
@@ -111,8 +114,8 @@ function onCardConfirm(ids: number[]) {
     <!-- ID 选择 -->
     <template v-if="isIdType">
       <div class="id-selector">
-        <span class="id-count">已选 {{ currentIds.length }} 张卡片</span>
-        <button class="btn-select-cards" @click="openCardSelector">选择卡片</button>
+        <span class="id-count">{{ t('condition.selectedCards', { count: currentIds.length }) }}</span>
+        <button class="btn-select-cards" @click="openCardSelector">{{ t('condition.selectCards') }}</button>
       </div>
     </template>
 

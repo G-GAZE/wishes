@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
 /**
  * 底部导航组件, 固定于页面底部, 用于切换页面
  */
@@ -8,7 +10,7 @@
  */
 export interface NavItem {
   key: string,
-  label: string,
+  labelKey: string,
   icon: string,
 }
 
@@ -20,11 +22,13 @@ defineEmits<{
   (e: "update:modelValue", value: string): void
 }>()
 
+const { t } = useI18n();
+
 const navItems: NavItem[] = [
-  { key: "home", label: "主页", icon: "" },
-  { key: "gacha", label: "抽卡", icon: "" },
-  { key: "catalog", label: "图鉴", icon: "" },
-  { key: "settings", label: "设置", icon: "" },
+  { key: "home", labelKey: "nav.home", icon: "" },
+  { key: "gacha", labelKey: "nav.gacha", icon: "" },
+  { key: "catalog", labelKey: "nav.catalog", icon: "" },
+  { key: "settings", labelKey: "nav.settings", icon: "" },
 ]
 
 const version = __APP_VERSION__;
@@ -40,9 +44,9 @@ const version = __APP_VERSION__;
       :class="{ active: modelValue === item.key }"
       @click="$emit('update:modelValue', item.key)"
     >
-      <div class="nav-label">{{ item.label }}</div>
+      <div class="nav-label">{{ t(item.labelKey) }}</div>
     </div>
-    <div class="version-tip">v{{ version }} - 测试版本, 不代表正式版品质</div>
+    <div class="version-tip">{{ t('nav.versionTip', { version }) }}</div>
   </nav>
 </template>
 

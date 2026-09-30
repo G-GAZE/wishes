@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 
 import logoUrl from '../assets/logos/wishes.svg';
 
 defineEmits<{
   (e: 'back'): void;
 }>();
+
+const { t } = useI18n();
 
 const version = __APP_VERSION__;
 const github_url = 'https://github.com/G-GAZE/wishes';
@@ -14,7 +17,7 @@ const github_url = 'https://github.com/G-GAZE/wishes';
   <div class="about-page">
     <div class="about-header">
       <button class="btn-back" @click="$emit('back')">
-        <span class="arrow">←</span> 返回
+        <span class="arrow">←</span> {{ t('common.back') }}
       </button>
     </div>
 
@@ -28,37 +31,32 @@ const github_url = 'https://github.com/G-GAZE/wishes';
 
       <!-- 项目简介 -->
       <div class="section">
-        <div class="section-title">项目简介</div>
+        <div class="section-title">{{ t('about.introTitle') }}</div>
         <div class="section-body">
-          <p>
-            <strong>Wishes (众愿)</strong> 是一款基于 Tauri 2 和 Vue 3 构建的通用、可高度自定义的模拟抽卡工具。
-          </p>
-          <p>
-            通过统一的标签系统管理卡片、卡组、卡池与抽卡逻辑，你可以在同一应用内自由搭建并模拟几乎任何游戏的抽卡机制，甚至更广义的随机系统。
-          </p>
+          <i18n-t keypath="about.introP1" tag="p">
+            <template #brand><strong>Wishes (众愿)</strong></template>
+          </i18n-t>
+          <p>{{ t('about.introP2') }}</p>
         </div>
       </div>
 
       <!-- 开源协议 -->
       <div class="section">
-        <div class="section-title">开源协议</div>
+        <div class="section-title">{{ t('about.licenseTitle') }}</div>
         <div class="section-body">
-          <p>
-            本项目基于 <strong>GNU General Public License v3.0 or later</strong>
-            (GPL-3.0-or-later) 协议开源。
-          </p>
-          <p>
-            任何基于 Wishes 的衍生项目必须开放其源代码，并保留原始的版权声明与许可证声明。
-          </p>
+          <i18n-t keypath="about.licenseP1" tag="p">
+            <template #license><strong>GNU General Public License v3.0 or later</strong></template>
+          </i18n-t>
+          <p>{{ t('about.licenseP2') }}</p>
         </div>
       </div>
 
       <!-- 项目地址 -->
       <div class="section">
-        <div class="section-title">项目地址</div>
+        <div class="section-title">{{ t('about.repoTitle') }}</div>
         <div class="section-body">
           <p>
-            GitHub: 
+            {{ t('about.repoLabel') }}
             <a :href="github_url" target="_blank" rel="noopener noreferrer">
               {{ github_url }}
             </a>

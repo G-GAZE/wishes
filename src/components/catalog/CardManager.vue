@@ -7,6 +7,7 @@ import { Tag } from '../../types';
 import CardForm from '../CardForm.vue';
 import { useTagStyles } from '../../composables/useTagStyles.ts';
 import { useMessage } from 'naive-ui';
+import { useI18n } from 'vue-i18n';
 
 const {
   cards,
@@ -22,6 +23,7 @@ const {
 } = useCardManager();
 
 const message = useMessage();
+const { t } = useI18n();
 
 // 选中卡片
 const selectedCard = ref<CardSummary | null>(null);
@@ -171,7 +173,7 @@ async function handleDelete() {
   if (deletingCard.value) {
     const success = await remove(deletingCard.value.id);
     if (!success) {
-      message.error(error.value ?? '删除卡片失败');
+      message.error(error.value ?? t('card.deleteFailed'));
       return;
     }
     if (selectedCard.value?.id === deletingCard.value.id) {
@@ -214,16 +216,16 @@ const selectedCardTagClasses = computed(() => {
       <div class="search-wrapper">
         <input 
           v-model="searchQuery"
-          placeholder="搜索卡片内容..."
+          :placeholder="t('card.searchPlaceholder')"
           class="search-input"
         />
         <div class="filtered-card-counter">
-          总数 {{ finalFilteredCards.length }} / {{ cards.length }}
+          {{ t('card.totalCounter', { filtered: finalFilteredCards.length, total: cards.length }) }}
         </div>
         <div class="filter-tags" @click="showTagFilterPopup = !showTagFilterPopup">
-          <span v-if="selectedFilterTags.length === 0" class="filter-placeholder">筛选标签</span>
+          <span v-if="selectedFilterTags.length === 0" class="filter-placeholder">{{ t('card.filterTags') }}</span>
           <span v-else class="filter-active">
-            {{ selectedFilterTags.length }} 个标签筛选
+            {{ t('card.activeFilterTags', { count: selectedFilterTags.length }) }}
           </span>
           <span class="filter-arrow">▼</span>
           
@@ -231,20 +233,20 @@ const selectedCardTagClasses = computed(() => {
         <!-- 标签筛选弹窗 -->
         <div v-if="showTagFilterPopup" class="tag-filter-popup" @click.stop>
           <div class="filter-popup-header">
-            <span>选择标签进行筛选</span>
+            <span>{{ t('card.filterPopupHint') }}</span>
             <div class="filter-mode-toggle">
               <button
                 class="mode-btn"
                 :class="{ active: tagFilterMode === 'AND' }"
                 @click="tagFilterMode = `AND`"
-              >包含所有</button>
+              >{{ t('card.filterModeAnd') }}</button>
               <button
                 class="mode-btn"
                 :class="{ active: tagFilterMode === 'OR' }"
                 @click="tagFilterMode = 'OR'"
-              >包含任意</button>
+              >{{ t('card.filterModeOr') }}</button>
             </div>
-            <button class="filter-clear" @click="clearTagFilters">清空</button>
+            <button class="filter-clear" @click="clearTagFilters">{{ t('card.clear') }}</button>
           </div>
           <div class="filter-popup-tags">
             <div v-for="group in tagGroups" :key="group.namespace" class="filter-tag-group">
@@ -272,22 +274,22 @@ const selectedCardTagClasses = computed(() => {
             </span> -->
           </div>
           <div class="filter-popup-footer">
-            <button class="filter-close" @click="closeTagFilterPopup">确认</button>
+            <button class="filter-close" @click="closeTagFilterPopup">{{ t('card.confirm') }}</button>
           </div>
         </div>
         
       </div>
-      <button class="btn-create" @click="openCreateModal">+ 新建卡片</button>
+      <button class="btn-create" @click="openCreateModal">{{ t('card.create') }}</button>
     </div>
 
     <!-- 主体两栏 -->
     <div class="main-body">
       <!-- 左侧: 卡片列表 -->
       <div class="card-list">
-        <div v-if="loading" class="loading-state">加载中...</div>
+        <div v-if="loading" class="loading-state">{{ t('common.loading') }}</div>
         <div v-else-if="error" class="error-state">{{ error }}</div>
         <div v-else-if="finalFilteredCards.length === 0" class="empty-state">
-          <p>没有匹配的卡片</p>
+          <p>{{ t('card.noMatch') }}</p>
         </div>
         <div v-else class="card-grid">
           <div
@@ -321,7 +323,7 @@ const selectedCardTagClasses = computed(() => {
       <div class="card-detail">
         <div v-if="!selectedCard" class="detail-empty">
           <span class="empty-icon">👆</span>
-          <span>选择一张卡片查看详情</span>
+          <span>{{ t('card.detailEmpty') }}</span>
         </div>
         <div v-else class="detail-content">
           <div class="detail-image">
@@ -342,8 +344,8 @@ const selectedCardTagClasses = computed(() => {
             </span>
           </div>
           <div class="detail-actions">
-            <button class="btn-detail-edit" @click="openEditModal(selectedCard)">编辑</button>
-            <button class="btn-detail-delete" @click="confirmDelete(selectedCard)">删除</button>
+            <button class="btn-detail-edit" @click="openEditModal(selectedCard)">{{ t('card.edit') }}</button>
+            <button class="btn-detail-delete" @click="confirmDelete(selectedCard)">{{ t('card.delete') }}</button>
           </div>
         </div>
       </div>
@@ -353,7 +355,7 @@ const selectedCardTagClasses = computed(() => {
     <div v-if="showModal" class="modal-overlay" @click="closeModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h3>{{ isEditMode ? '编辑卡片' : '创建卡片' }}</h3>
+          <h3>{{ isEditMode ? t('card.editTitle') : t('card.createTitle') }}</h3>
           <button class="modal-close" @click="closeModal">✕</button>
         </div>
         <div class="modal-body">
@@ -365,9 +367,9 @@ const selectedCardTagClasses = computed(() => {
           />
         </div>
         <div class="modal-footer">
-          <button class="btn-cancel" @click="closeModal">取消</button>
+          <button class="btn-cancel" @click="closeModal">{{ t('common.cancel') }}</button>
           <button class="btn-save" @click="handleSave">
-            {{ isEditMode ? '保存' : '创建' }}
+            {{ isEditMode ? t('card.save') : t('card.createAction') }}
           </button>
         </div>
       </div>
@@ -376,18 +378,12 @@ const selectedCardTagClasses = computed(() => {
     <!-- 删除确认弹窗 -->
     <div v-if="showDeleteConfirm" class="modal-overlay" @click="closeDeleteConfirm">
       <div class="modal-content confirm-dialog" @click.stop>
-        <h3 class="confirm-title">确认删除</h3>
-        <p class="confirm-message">确定要删除卡片「{{ deletingCard?.content }}」吗？</p>
-        <div v-if="referencingDecks.length > 0" class="confirm-refs">
-          <p class="ref-hint">该卡片被以下卡组显式引用，删除后这些卡组将不再包含它：</p>
-          <ul class="ref-list">
-            <li v-for="deck in referencingDecks" :key="deck.id">{{ deck.name }}</li>
-          </ul>
-        </div>
-        <p class="warning">⚠ 此操作不可撤销</p>
+        <h3 class="confirm-title">{{ t('card.deleteConfirmTitle') }}</h3>
+        <p class="confirm-message">{{ t('card.deleteConfirmContent', { name: deletingCard?.content }) }}</p>
+        <p class="warning">{{ t('card.deleteWarning') }}</p>
         <div class="modal-footer">
-          <button class="btn-cancel" @click="closeDeleteConfirm">取消</button>
-          <button class="btn-danger" @click="handleDelete">确认删除</button>
+          <button class="btn-cancel" @click="closeDeleteConfirm">{{ t('common.cancel') }}</button>
+          <button class="btn-danger" @click="handleDelete">{{ t('card.deleteConfirmTitle') }}</button>
         </div>
       </div>
     </div>

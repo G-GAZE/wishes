@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { Tag } from '../../types';
 
 const props = defineProps<{
@@ -10,6 +11,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: Tag[]): void;
 }>();
+
+const { t } = useI18n();
 
 const localTags = ref<Tag[]>([...props.modelValue]);
 const newNamespace = ref('');
@@ -76,7 +79,7 @@ function emitUpdate() {
         {{ tag.namespace }}: {{ tag.value }}
         <button class="tag-remove" @click="removeTag(tag)">✕</button>
       </span>
-      <span v-if="localTags.length === 0" class="no-tags">暂无标签</span>
+      <span v-if="localTags.length === 0" class="no-tags">{{ t('card.noTags') }}</span>
     </div>
 
     <!-- 可选标签 -->
@@ -100,18 +103,18 @@ function emitUpdate() {
     <div class="new-tag-row">
       <input
         v-model="newNamespace"
-        placeholder="命名空间"
+        :placeholder="t('card.namespacePlaceholder')"
         class="new-tag-input ns"
         @keydown.enter="addTag"
       />
       <span class="sep">:</span>
       <input
         v-model="newValue"
-        placeholder="值"
+        :placeholder="t('card.valuePlaceholder')"
         class="new-tag-input value"
         @keydown.enter="addTag"
       />
-      <button class="btn-add-tag" @click="addTag">+ 添加</button>
+      <button class="btn-add-tag" @click="addTag">{{ t('card.addTag') }}</button>
     </div>
   </div>
 </template>

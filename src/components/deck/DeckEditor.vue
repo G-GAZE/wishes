@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { DeckSummary, EventGroup, Membership } from '../../api/decks';
 import type { EventTag, Tag } from '../../types';
 import TagSelector from '../common/TagSelector.vue';
 import ConditionEditor from '../deck/ConditionEditor.vue';
-import { getEventTagLabel } from '../../constants/eventTags.ts';
+import { eventTagLabel } from '../../constants/eventTags.ts';
 import EventGroupModal from './EventGroupModal.vue';
 import { useDialog } from 'naive-ui';
 import { cloneDeep } from 'lodash-es';
@@ -52,6 +53,7 @@ const formData = reactive<DeckFormData>(
 const showEventGroupModal = ref(false);
 
 const dialog = useDialog();
+const { t } = useI18n();
 
 function onEventGroupConfirm(tag: EventTag) {
   if (!formData.event_groups[tag]) {
@@ -72,7 +74,7 @@ function addMemberCondition() {
 // 删除 members 条件
 function removeMemberCondition(index: number) {
   confirmDelete({
-    content: '确定要删除这个成员条件吗?',
+    content: t('deck.deleteMemberConfirm'),
     onConfirm: () => {
       formData.members.conditions.splice(index, 1);
     }
@@ -95,10 +97,10 @@ function addEventGroup() {
 function removeEventGroup(key: EventTag) {
   const condCount = formData.event_groups[key]?.conditions.length ?? 0;
   confirmDelete({
-    title: '删除活动组',
+    title: t('deck.deleteEventGroupTitle'),
     content: condCount > 0
-      ? `确定要删除活动组「${key}」吗? 其下的 ${condCount} 个条件也会一并删除。`
-      : `确定要删除活动组「${key}」吗?`,
+      ? t('deck.deleteEventGroupWithConds', { tag: key, count: condCount })
+      : t('deck.deleteEventGroup', { tag: key }),
       onConfirm: () => {
         delete formData.event_groups[key];
       }
@@ -113,7 +115,7 @@ function addEventGroupCondition(key: EventTag) {
 // 删除 event group 中的条件
 function removeEventGroupCondition(key: EventTag, index: number) {
   confirmDelete({
-    content: '确定要删除这个条件吗?',
+    content: t('deck.deleteConditionConfirm'),
     onConfirm: () => {
       formData.event_groups[key].conditions.splice(index, 1);
     }
@@ -122,10 +124,10 @@ function removeEventGroupCondition(key: EventTag, index: number) {
 
 function confirmDelete(options: { title?: string, content: string, onConfirm: () => void }) {
   dialog.warning({
-    title: options.title ?? '确认删除',
+    title: options.title ?? t('deck.deleteConfirmTitle'),
     content: options.content,
-    positiveText: '确认删除',
-    negativeText: '取消',
+    positiveText: t('deck.deleteConfirmTitle'),
+    negativeText: t('common.cancel'),
     onPositiveClick: () => {
       options.onConfirm();
     },
@@ -152,13 +154,13 @@ function save() {
   <div class="deck-editor">
     <div class="editor-header">
       <!-- <button class="btn-close" @click="emit('cancel')"></button> -->
-      <h3>{{ isEditMode ? '编辑卡组' : '新建卡组' }}</h3>
+      <h3>{{ isEditMode ? t('deck.editorTitleEdit') : t('deck.editorTitleCreate') }}</h3>
     </div>
 
     <div class="id-name-field">
       <div v-if="isEditMode && deck" class="deck-id">ID {{ deck.id }}</div>
-      <label>卡组名称</label>
-      <input v-model="formData.name" class="name-input" placeholder="输入卡组名称" />
+      <label>{{ t('deck.nameLabel') }}</label>
+      <input v-model="formData.name" class="name-input" :placeholder="t('deck.namePlaceholder')" />
     </div>
 
     <div class="editor-body">
@@ -171,48 +173,48 @@ function save() {
 
       <!-- 标签 -->
       <div class="field">
-        <label>标签</label>
+        <label>{{ t('deck.tagsLabel') }}</label>
         <TagSelector v-model="formData.tags" />
       </div>
 
       <!-- Membership -->
       <div class="field">
-        <label>成员条件</label>
-        <span>决定卡组中包含哪些卡片</span>
+        <label>{{ t('deck.membersLabel') }}</label>
+        <span>{{ t('deck.membersHint') }}</span>
 
         <div v-for="(_, idx) in formData.members.conditions" :key="idx" class="condition-wrapper">
           <ConditionEditor v-model="formData.members.conditions[idx]" />
-          <button class="btn-remove-cond" @click="removeMemberCondition(idx)">删除</button>
+          <button class="btn-remove-cond" @click="removeMemberCondition(idx)">{{ t('deck.deleteCondition') }}</button>
         </div>
 
-        <button class="btn-add-cond" @click="addMemberCondition">+ 添加条件</button>
+        <button class="btn-add-cond" @click="addMemberCondition">{{ t('deck.addCondition') }}</button>
       </div>
 
       <!-- Event Groups -->
       <div class="field">
-        <label>活动组条件</label>
-        <span>决定每个活动组中包含哪些卡片</span>
+        <label>{{ t('deck.eventGroupsLabel') }}</label>
+        <span>{{ t('deck.eventGroupsHint') }}</span>
 
         <div v-for="(group, eventTag) in formData.event_groups" :key="eventTag" class="event-group">
           <div class="event-group-header">
             <div class="event-tag">
               {{ eventTag }}
-              <span v-if="getEventTagLabel(eventTag)" class="event-tag-hint">
-                 {{ getEventTagLabel(eventTag) }}
+              <span v-if="eventTagLabel(t, eventTag)" class="event-tag-hint">
+                 {{ eventTagLabel(t, eventTag) }}
               </span>
             </div>
-            <button class="btn-remove-group" @click="removeEventGroup(eventTag)">删除组</button>
+            <button class="btn-remove-group" @click="removeEventGroup(eventTag)">{{ t('deck.removeGroup') }}</button>
           </div>
 
           <div v-for="(_, idx) in group.conditions" :key="idx" class="condition-wrapper">
             <ConditionEditor v-model="group.conditions[idx]" />
-            <button class="btn-remove-cond" @click="removeEventGroupCondition(eventTag, idx)">删除</button>
+            <button class="btn-remove-cond" @click="removeEventGroupCondition(eventTag, idx)">{{ t('deck.deleteCondition') }}</button>
           </div>
 
-          <button class="btn-add-cond" @click="addEventGroupCondition(eventTag)">+ 添加条件</button>
+          <button class="btn-add-cond" @click="addEventGroupCondition(eventTag)">{{ t('deck.addCondition') }}</button>
         </div>
 
-        <button class="btn-add-group" @click="addEventGroup">+ 添加活动组</button>
+        <button class="btn-add-group" @click="addEventGroup">{{ t('deck.addGroup') }}</button>
 
         <EventGroupModal
           v-if="showEventGroupModal"
@@ -224,8 +226,8 @@ function save() {
     </div>
 
     <div class="editor-footer">
-      <button class="btn-cancel" @click="emit('cancel')">取消</button>
-      <button class="btn-save" @click="save" :disabled="formData.name === ''">保存</button>
+      <button class="btn-cancel" @click="emit('cancel')">{{ t('common.cancel') }}</button>
+      <button class="btn-save" @click="save" :disabled="formData.name === ''">{{ t('deck.save') }}</button>
     </div>
   </div>
 </template>

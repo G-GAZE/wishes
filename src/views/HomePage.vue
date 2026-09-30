@@ -5,6 +5,7 @@
  */
 
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { BannerSummary } from '../types';
 
 defineEmits<{
@@ -14,6 +15,8 @@ defineEmits<{
 defineProps<{
   banners: BannerSummary[],
 }>();
+
+const { t } = useI18n();
 
 
 // 背景光晕实现
@@ -44,8 +47,8 @@ const resetGlow = () => {
     <div class="bg-glow" ref="glowRef"></div>
 
     <div class="header-area">
-      <span class="title">主页</span>
-    <span class="subtitle">选择卡池开始抽卡!</span>
+      <span class="title">{{ t('home.title') }}</span>
+    <span class="subtitle">{{ t('home.subtitle') }}</span>
     </div>
     
     <div class="banner-grid" v-if="banners.length">

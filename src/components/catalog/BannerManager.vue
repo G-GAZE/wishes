@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 </script>
 
 
 <template>
   <div class="manager-banner">
-    <h3>卡池管理</h3>
+    <h3>{{ t('banner.managerTitle') }}</h3>
   </div>
 </template>
 

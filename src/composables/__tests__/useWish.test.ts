@@ -7,6 +7,14 @@ vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
 }));
 
+// 单测不处于组件 setup 上下文, mock 掉 i18n (仅测试文案拼装行为)
+vi.mock("vue-i18n", () => ({
+  useI18n: () => ({
+    t: (key: string, params?: Record<string, unknown>) =>
+      params ? `${key} ${Object.values(params).map(String).join(" ")}` : key,
+  }),
+}));
+
 describe("useWish", () => {
   beforeEach(() => {
     vi.clearAllMocks();

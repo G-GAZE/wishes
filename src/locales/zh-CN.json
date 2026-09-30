@@ -1,0 +1,177 @@
+{
+  "common": {
+    "loading": "加载中…",
+    "open": "打开",
+    "cancel": "取消",
+    "back": "返回"
+  },
+  "nav": {
+    "home": "主页",
+    "gacha": "抽卡",
+    "catalog": "图鉴",
+    "settings": "设置",
+    "versionTip": "v{version} - 测试版本, 不代表正式版品质"
+  },
+  "settings": {
+    "title": "设置",
+    "subtitle": "应用偏好与数据管理",
+    "language": "语言",
+    "dataDir": "数据目录",
+    "logDir": "日志目录",
+    "darkMode": "深色模式",
+    "darkModeEnabled": "已启用",
+    "about": "关于",
+    "aboutSummary": "项目简介与开源协议",
+    "error": {
+      "loadPaths": "获取数据目录路径失败: {error}",
+      "openDataDir": "打开数据目录失败: {error}",
+      "openLogDir": "打开日志目录失败: {error}"
+    }
+  },
+  "about": {
+    "introTitle": "项目简介",
+    "introP1": "{brand} 是一款基于 Tauri 2 和 Vue 3 构建的通用、可高度自定义的模拟抽卡工具。",
+    "introP2": "通过统一的标签系统管理卡片、卡组、卡池与抽卡逻辑，你可以在同一应用内自由搭建并模拟几乎任何游戏的抽卡机制，甚至更广义的随机系统。",
+    "licenseTitle": "开源协议",
+    "licenseP1": "本项目基于 {license} (GPL-3.0-or-later) 协议开源。",
+    "licenseP2": "任何基于 Wishes 的衍生项目必须开放其源代码，并保留原始的版权声明与许可证声明。",
+    "repoTitle": "项目地址",
+    "repoLabel": "GitHub: "
+  },
+  "home": {
+    "title": "主页",
+    "subtitle": "选择卡池开始抽卡!"
+  },
+  "gacha": {
+    "noBannerSelected": "未选择卡池",
+    "deckLabel": "卡组",
+    "logicLabel": "逻辑",
+    "totalCounterLabel": "总抽数",
+    "loadingInfo": "加载卡池信息中...",
+    "wishSingle": "抽卡 1 次",
+    "wishTen": "抽卡 10 次"
+  },
+  "catalog": {
+    "title": "图鉴",
+    "subtitle": "管理所有卡片、卡组、逻辑与卡池",
+    "tabs": {
+      "cards": "卡片",
+      "decks": "卡组",
+      "logics": "逻辑",
+      "banners": "卡池"
+    }
+  },
+  "wish": {
+    "rarity": "稀有度 {rarity} : {count}",
+    "skip": "跳过 >",
+    "clickContinue": "点击空白处以继续",
+    "clickClose": "点击空白处以关闭",
+    "loadBannersFailed": "加载卡池列表失败: {error}",
+    "loadBannerInfoFailed": "加载卡池信息失败: {error}",
+    "drawFailed": "抽卡失败: {error}"
+  },
+  "card": {
+    "name": "名称",
+    "namePlaceholder": "输入卡片名称",
+    "tags": "标签",
+    "noTags": "暂无标签",
+    "availableTags": "可选标签",
+    "newTag": "新建标签",
+    "namespacePlaceholder": "命名空间",
+    "valuePlaceholder": "值",
+    "addTag": "+ 添加",
+    "searchPlaceholder": "搜索卡片内容...",
+    "totalCounter": "总数 {filtered} / {total}",
+    "filterTags": "筛选标签",
+    "activeFilterTags": "{count} 个标签筛选",
+    "filterPopupHint": "选择标签进行筛选",
+    "filterModeAnd": "包含所有",
+    "filterModeOr": "包含任意",
+    "clear": "清空",
+    "confirm": "确认",
+    "create": "+ 新建卡片",
+    "edit": "编辑",
+    "delete": "删除",
+    "editTitle": "编辑卡片",
+    "createTitle": "创建卡片",
+    "save": "保存",
+    "createAction": "创建",
+    "deleteConfirmTitle": "确认删除",
+    "deleteConfirmContent": "确定要删除卡片「{name}」吗？",
+    "deleteWarning": "⚠ 此操作不可撤销",
+    "detailEmpty": "选择一张卡片查看详情",
+    "noMatch": "没有匹配的卡片",
+    "deleteFailed": "删除卡片失败",
+    "deleteError": "删除卡片失败: {error}",
+    "loadFailed": "加载卡片失败: {error}",
+    "createFailed": "创建卡片失败: {error}",
+    "updateFailed": "更新卡片失败: {error}"
+  },
+  "logic": {
+    "managerTitle": "逻辑管理"
+  },
+  "banner": {
+    "managerTitle": "卡池管理"
+  },
+  "deck": {
+    "searchPlaceholder": "搜索卡组...",
+    "totalCounter": "总数 {filtered} / {total}",
+    "create": "+ 新建卡组",
+    "noTags": "无标签",
+    "edit": "编辑",
+    "delete": "删除",
+    "deleteConfirmTitle": "确认删除",
+    "deleteConfirmContent": "确认删除该卡组吗?",
+    "deleteSuccess": "删除成功",
+    "deleteFailed": "卡组删除失败",
+    "editorTitleCreate": "新建卡组",
+    "editorTitleEdit": "编辑卡组",
+    "nameLabel": "卡组名称",
+    "namePlaceholder": "输入卡组名称",
+    "tagsLabel": "标签",
+    "membersLabel": "成员条件",
+    "membersHint": "决定卡组中包含哪些卡片",
+    "deleteCondition": "删除",
+    "addCondition": "+ 添加条件",
+    "eventGroupsLabel": "活动组条件",
+    "eventGroupsHint": "决定每个活动组中包含哪些卡片",
+    "removeGroup": "删除组",
+    "addGroup": "+ 添加活动组",
+    "deleteMemberConfirm": "确定要删除这个成员条件吗?",
+    "deleteEventGroupTitle": "删除活动组",
+    "deleteEventGroupWithConds": "确定要删除活动组「{tag}」吗? 其下的 {count} 个条件也会一并删除。",
+    "deleteEventGroup": "确定要删除活动组「{tag}」吗?",
+    "deleteConditionConfirm": "确定要删除这个条件吗?",
+    "save": "保存",
+    "eventGroupModalTitle": "添加活动组",
+    "eventGroupTypeLabel": "活动组类型",
+    "eventGroupTypePlaceholder": "请选择活动组类型",
+    "eventGroupExistsHint": "已存在的活动组不可重复添加",
+    "eventGroupConfirm": "确认添加",
+    "loadFailed": "卡组加载失败: {error}",
+    "createFailed": "创建卡组失败: {error}",
+    "updateFailed": "更新卡组失败: {error}",
+    "deleteError": "卡组删除失败: {error}"
+  },
+  "condition": {
+    "all": "全选",
+    "tagAll": "包含所有标签",
+    "tagAny": "包含任意标签",
+    "filterTagAll": "保留所有标签",
+    "filterTagAny": "保留任意标签",
+    "includeCards": "包含卡片",
+    "excludeCards": "排除卡片",
+    "selectedCards": "已选 {count} 张卡片",
+    "selectCards": "选择卡片",
+    "searchPlaceholder": "搜索内容或标签, 空格分隔多个关键词",
+    "clearSearch": "清空",
+    "selectedCount": "已选 {count} 张",
+    "confirmSelection": "确认选择"
+  },
+  "eventTag": {
+    "standard": "常驻",
+    "up": "概率提升",
+    "fes": "节日限定",
+    "appoint": "定轨"
+  }
+}

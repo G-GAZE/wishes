@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Tag } from '../types';
 
 const props = defineProps<{
@@ -11,6 +12,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'change', data: { content: string; tags: Tag[] }): void;
 }>();
+
+const { t } = useI18n();
 
 // 表单数据
 const localContent = ref(props.initialContent || '');
@@ -89,25 +92,25 @@ watch([localContent, localTags], () => {
   <div class="card-form">
     <!-- 名称（单行） -->
     <div class="form-group">
-      <label>名称</label>
-      <input v-model="localContent" placeholder="输入卡片名称" class="form-input" />
+      <label>{{ t('card.name') }}</label>
+      <input v-model="localContent" :placeholder="t('card.namePlaceholder')" class="form-input" />
     </div>
 
     <!-- 已选标签 -->
     <div class="form-group">
-      <label>标签</label>
+      <label>{{ t('card.tags') }}</label>
       <div class="selected-tags">
         <span v-for="tag in localTags" :key="`${tag.namespace}:${tag.value}`" class="tag-item">
           {{ tag.namespace }}: {{ tag.value }}
           <button class="tag-remove" @click="removeTag(tag)">✕</button>
         </span>
-        <span v-if="localTags.length === 0" class="no-tags">暂无标签</span>
+        <span v-if="localTags.length === 0" class="no-tags">{{ t('card.noTags') }}</span>
       </div>
     </div>
 
     <!-- 可选标签（按命名空间分组，横向滚动） -->
     <div class="form-group" v-if="availableTagsGrouped.length > 0">
-      <label>可选标签</label>
+      <label>{{ t('card.availableTags') }}</label>
       <div class="available-tags-wrapper">
         <div v-for="group in availableTagsGrouped" :key="group.namespace" class="tag-group">
           <span class="group-label">{{ group.namespace }}</span>
@@ -127,22 +130,22 @@ watch([localContent, localTags], () => {
 
     <!-- 新建标签 -->
     <div class="form-group">
-      <label>新建标签</label>
+      <label>{{ t('card.newTag') }}</label>
       <div class="new-tag-row">
         <input
           v-model="newNamespace"
-          placeholder="命名空间"
+          :placeholder="t('card.namespacePlaceholder')"
           class="new-tag-input ns"
           @keydown.enter="addTag"
         />
         <span class="sep">:</span>
         <input
           v-model="newValue"
-          placeholder="值"
+          :placeholder="t('card.valuePlaceholder')"
           class="new-tag-input value"
           @keydown.enter="addTag"
         />
-        <button class="btn-add-tag" @click="addTag">+ 添加</button>
+        <button class="btn-add-tag" @click="addTag">{{ t('card.addTag') }}</button>
       </div>
     </div>
   </div>

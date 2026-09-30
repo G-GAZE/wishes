@@ -8,6 +8,7 @@
  */
 
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { BannerInfo, BannerSummary, WishResponse } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 
@@ -20,12 +21,14 @@ export function useWish() {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
+  const { t } = useI18n();
+
   /** 加载卡池摘要列表 */
   async function loadBanners() {
     try {
       banners.value = await invoke<BannerSummary[]>("get_banners");
     } catch (e) {
-      error.value = `加载卡池列表失败: ${e}`;
+      error.value = t("wish.loadBannersFailed", { error: e });
     }
   }
 
@@ -34,7 +37,7 @@ export function useWish() {
     try {
       currentBannerInfo.value = await invoke<BannerInfo>("get_banner_info", { bannerId });
     } catch (e) {
-      error.value = `加载卡池信息失败: ${e}`;
+      error.value = t("wish.loadBannerInfoFailed", { error: e });
     }
   }
 
@@ -49,7 +52,7 @@ export function useWish() {
       await loadBannerInfo(bannerId);
       return result;
     } catch (e) {
-      error.value = `抽卡失败: ${e}`
+      error.value = t("wish.drawFailed", { error: e })
       throw e;
     } finally {
       loading.value = false;
