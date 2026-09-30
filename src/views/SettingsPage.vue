@@ -7,7 +7,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { onMounted, ref } from 'vue';
 import AboutPage from './AboutPage.vue';
-import { useMessage } from 'naive-ui';
+import { useMessage, NSelect, type SelectOption } from 'naive-ui';
 import { useI18n } from 'vue-i18n';
 import { SUPPORTED_LOCALES, setLocale, type Locale } from '../i18n';
 
@@ -15,17 +15,16 @@ const message = useMessage();
 const { t, locale } = useI18n();
 
 /** 语言选项 (名称按各自语言显示, 不随界面语言变化). */
-const languageOptions: { value: Locale; label: string }[] = [
+const languageOptions: SelectOption[] = [
   { value: 'zh-CN', label: '简体中文' },
-  { value: 'en', label: 'English' },
-  { value: 'ja', label: '日本語' },
+  { value: 'en',    label: 'English' },
+  { value: 'ja',    label: '日本語' },
 ];
 
 /** 切换界面语言. */
-function onLocaleChange(event: Event) {
-  const value = (event.target as HTMLSelectElement).value as Locale;
+function onLocaleChange(value: string) {
   if ((SUPPORTED_LOCALES as readonly string[]).includes(value)) {
-    setLocale(value);
+    setLocale(value as Locale);
   }
 }
 
@@ -99,11 +98,13 @@ async function openLogDir() {
           <div class="setting-item">
             <span class="setting-label">{{ t('settings.language') }}</span>
             <span class="setting-value">
-              <select class="lang-select" :value="locale" @change="onLocaleChange">
-                <option v-for="option in languageOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
+              <n-select
+                :value="locale"
+                :options="languageOptions"
+                :consistent-menu-width="false"
+                size="small"
+                @update:value="onLocaleChange"
+              />
             </span>
           </div>
           <div class="setting-item">
@@ -277,24 +278,6 @@ async function openLogDir() {
 .open-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.lang-select {
-  background: rgba(79, 110, 247, 0.15);
-  border: 1px solid #2d3642;
-  border-radius: 6px;
-  padding: 3px 8px;
-  color: #b0c0d0;
-  font-size: 1.1rem;
-  cursor: pointer;
-  outline: none;
-}
-.lang-select:focus {
-  border-color: #007bff;
-}
-.lang-select option {
-  background: #1a212b;
-  color: #e4e8ef;
 }
 
 /* --- 滑动过渡 --- */
