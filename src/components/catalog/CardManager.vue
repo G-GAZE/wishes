@@ -380,6 +380,12 @@ const selectedCardTagClasses = computed(() => {
       <div class="modal-content confirm-dialog" @click.stop>
         <h3 class="confirm-title">{{ t('card.deleteConfirmTitle') }}</h3>
         <p class="confirm-message">{{ t('card.deleteConfirmContent', { name: deletingCard?.content }) }}</p>
+        <div v-if="referencingDecks.length > 0" class="confirm-refs">
+          <p class="ref-hint">{{ t('card.deleteRefDeckWarning') }}</p>
+          <ul class="ref-list">
+            <li v-for="deck in referencingDecks" :key="deck.id">{{ deck.name }}</li>
+          </ul>
+        </div>
         <p class="warning">{{ t('card.deleteWarning') }}</p>
         <div class="modal-footer">
           <button class="btn-cancel" @click="closeDeleteConfirm">{{ t('common.cancel') }}</button>
