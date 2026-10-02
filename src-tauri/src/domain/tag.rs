@@ -171,7 +171,7 @@ impl From<&str> for EventTag {
 pub struct Tagged<T> {
     #[serde(flatten)]
     pub inner: T,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "HashSet::is_empty")]
     pub tags: HashSet<Tag>
 }
 

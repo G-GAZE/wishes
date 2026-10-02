@@ -4,11 +4,14 @@
 use std::collections::{HashMap, HashSet};
 use serde::{Serialize, Deserialize};
 
-use crate::{domain::{tag::{EventTag, Tag, Tagged}}, infrastructure::registry::CardRegistry};
-use super::ids::{DeckId, CardId};
+use crate::{
+    domain::{
+        ids::GlobalId, localized_string::LocalizedString, origin::Origin, tag::{EventTag, Tag, Tagged}
+    }, infrastructure::registry::CardRegistry
+};
 
 
-/// 声明卡组成员卡片的条件
+/// 声明卡组成员卡片的条件.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum MembershipCondition {
@@ -28,13 +31,13 @@ pub enum MembershipCondition {
     #[serde(rename = "filter_tag_any")]
     FilterTagAny{tags: Vec<Tag>},
 
-    /// 全局拉取: 直接添加这些 Id 的卡片.
+    /// 全局拉取: 直接添加这些 `global_id` 的卡片.
     #[serde(rename = "include_ids")]
-    IncludeIds{ ids: HashSet<CardId> },
+    IncludeIds{ ids: HashSet<GlobalId> },
 
     /// 排除: 直接排除这些指定的卡片.
     #[serde(rename = "exclude_ids")]
-    ExcludeIds{ ids: HashSet<CardId> },
+    ExcludeIds{ ids: HashSet<GlobalId> },
 
     // TODO[2026-08-19]: 当前的匹配规则主要是正向匹配, 未来加入标签反向排除规则, EventGroupCondition 同理
 }
@@ -42,12 +45,24 @@ pub enum MembershipCondition {
 /// 卡组成员规则, 每个条件顺序应用.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Membership {
+    /// 按顺序应用的条件列表.
+    #[serde(default)]
     pub conditions: Vec<MembershipCondition>,
+}
+
+impl Default for Membership {
+    fn default() -> Self {
+        Self { conditions: Vec::new() }
+    }
 }
 
 impl Membership {
     /// 由成员规则计算得到最终成员卡片
-    pub fn resolve(&self, registry: &CardRegistry) -> HashSet<CardId> {
+    /// 
+    /// # 执行顺序
+    /// 1. 顺序应用全部包含型与过滤型条件 (顺序会影响结果).
+    /// 2. 应用全部排除型条件 (顺序不影响结果).
+    pub fn resolve(&self, registry: &CardRegistry) -> HashSet<GlobalId> {
         let mut result = HashSet::new();
 
         // 1. 应用所有包含型和过滤型条件, 顺序能影响执行效果
@@ -125,13 +140,13 @@ pub enum EventGroupCondition {
     #[serde(rename = "filter_tag_any")]
     FilterTagAny{ tags: Vec<Tag> },
 
-    /// 显示添加: 直接添加这些 Id 的卡片.
+    /// 显示添加: 直接添加这些 `global_id` 的卡片.
     #[serde(rename = "include_ids")]
-    IncludeIds{ ids: HashSet<CardId> },
+    IncludeIds{ ids: HashSet<GlobalId> },
 
-    /// 排除: 直接排除这些 Id 的卡片.
+    /// 排除: 直接排除这些 `global_id` 的卡片.
     #[serde(rename = "exclude_ids")]
-    ExcludeIds{ ids: HashSet<CardId> },
+    ExcludeIds{ ids: HashSet<GlobalId> },
 
     /// 暂不支持
     #[serde(rename = "include_groups")]
@@ -142,15 +157,23 @@ pub enum EventGroupCondition {
     ExcludeGroups{ groups: Vec<EventTag> },
 }
 
-
+/// 活动标签分组.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventGroup {
+    /// 按顺序应用的条件列表.
+    #[serde(default)]
     pub conditions: Vec<EventGroupCondition>
+}
+
+impl Default for EventGroup {
+    fn default() -> Self {
+        Self { conditions: Vec::new() }
+    }
 }
 
 impl EventGroup {
     /// 根据筛选规则计算实际包含的卡片
-    pub fn resolve(&self, members: &HashSet<CardId>, registry: &CardRegistry) -> HashSet<CardId> {
+    pub fn resolve(&self, members: &HashSet<GlobalId>, registry: &CardRegistry) -> HashSet<GlobalId> {
         let mut result = HashSet::new();
 
         // 1. 同 members 的处理, 但全局拉取需和 members 取交集
@@ -219,19 +242,52 @@ impl EventGroup {
 /// 卡组核心数据 (不包含标签 `Tag`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Deck {
-    /// 唯一标识.
-    pub id: DeckId,
+    /// 全局唯一标识.
+    pub global_id: GlobalId,
+
+    /// 对象来源.
+    pub origin: Origin,
+
+    /// 派生自哪个对象的 `global_id`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub forked_from: Option<GlobalId>,
+
     /// 卡组名称.
-    pub name: String,
-    /// 卡组包含的所有卡片 Id 全集.
+    pub name: LocalizedString,
+
+    /// 资源引用.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assets: Option<DeckAssets>,
+
+    /// 成员规则.
     pub members: Membership,
+
     /// 活动标签分组映射: `EventTag` -> 该分组下的所有卡片 Id 集合.
-    /// 这些 Id 必须为 `members` 的子集.
+    /// 这些卡片必须为 `members` 的子集.
+    #[serde(default)]
     pub event_groups: HashMap<EventTag, EventGroup>,
 }
 
 impl Deck {
-    /// 根据标签条件查询卡组中匹配的卡片 Id.
+    /// 以默认来源 (`local`) 创建一个空卡组.
+    pub fn new(name: LocalizedString) -> Self {
+        Self {
+            global_id: GlobalId::new(),
+            origin: Origin::Local,
+            forked_from: None,
+            name,
+            assets: None,
+            members: Membership::default(),
+            event_groups: HashMap::new(),
+        }
+    }
+
+    /// 按给定语言解析卡组显示名, 缺失时回退到默认语言或任意可用语言.
+    pub fn display_name(&self, locale: &str) -> Option<&str> {
+        self.name.get_or_default_locale(locale)
+    }
+
+    /// 根据标签条件查询卡组中匹配的卡片 `global_id`.
     /// 
     /// # 参数
     /// - `registry`: 全局卡片注册表 `CardRegistry`, 用于全局标签索引查询.
@@ -239,8 +295,8 @@ impl Deck {
     /// - `event_tags`: 活动标签, 要求卡片必须处于对应的活动分组中.
     /// 
     /// # 返回
-    /// 符合条件的卡片 Id 列表, 顺序不确定.
-    pub fn query_cards(&self, registry: &CardRegistry, tags: &[Tag], event_tags: &[EventTag]) -> Vec<CardId> {
+    /// 符合条件的卡片 `global` 列表, 顺序不确定.
+    pub fn query_cards(&self, registry: &CardRegistry, tags: &[Tag], event_tags: &[EventTag]) -> Vec<GlobalId> {
         let members = self.members.resolve(registry);
 
         let mut cards = if tags.is_empty() {
@@ -264,6 +320,21 @@ impl Deck {
         }
 
         cards.into_iter().collect()
+    }
+}
+
+/// 卡组资产引用.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeckAssets {
+    /// 卡组封面.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cover: Option<String>,
+}
+
+impl DeckAssets {
+    /// 是否所有资产引用都为空.
+    pub fn is_empty(&self) -> bool {
+        self.cover.is_none()
     }
 }
 
