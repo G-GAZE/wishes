@@ -96,7 +96,8 @@ impl Membership {
                     if !ids.is_empty() => {
                         // 只保留存在的 Id
                         // 直接使用迭代器拓展, 性能更好
-                        result.extend(ids.iter().filter(|id| registry.contains(**id)).copied());
+                        result.extend(ids.iter().filter(|id| registry.contains_visible(**id)).copied());
+                        // TODO[2026-10-03]: 究竟使用 contains_visible (不含遮蔽) 还是 contains_including_shadowed (含遮蔽), 需等待后续决定
                     },
                 _ => {},
             }
