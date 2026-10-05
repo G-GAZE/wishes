@@ -56,21 +56,12 @@ impl StateRepository {
     pub fn new(db_path: &Path) -> Result<Self> {
         let conn = Connection::open(db_path)?;
 
-        conn.execute(
-            r#"
-                CREATE TABLE IF NOT EXISTS instance_states (
-                    user_id         INTEGER NOT NULL,
-                    banner_id       INTEGER NOT NULL,
-                    total_counter   INTEGER NOT NULL DEFAULT 0,
-                    logic_state     Text,
-                    PRIMARY KEY     (user_id, banner_id)
-                )
-            "#,
-            []
-        )?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Self::ensure_schema(&conn)?;
+
+        Ok(Self {conn: Mutex::new(conn)})
     }
 
+    /// 确保 `instance_states` 表为 v2 结构, 必要时重建.
     fn ensure_schema(conn: &Connection) -> Result<()> {
         let has_table: bool = conn.query_row(
             "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'instance_states'",

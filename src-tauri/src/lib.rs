@@ -12,11 +12,7 @@ use anyhow::{Context, Result};
 use tauri_plugin_opener::OpenerExt;
 use crate::{
     app::state::AppState, domain::{
-        ids::{
-            BannerId,
-            CardId,
-            DeckId
-        },
+        ids::GlobalId,
         tag::Tag
     }, interface::{
         banner_info::{
@@ -57,14 +53,13 @@ fn log_command_err(command: &'static str, e: anyhow::Error) -> String {
 /// 执行单次抽卡
 /// 
 /// # 参数
-/// - `banner_id`: 目标卡池的 Id (`u64`).
+/// - `banner_id`: 目标卡池的 `global_id` (Uuid 字符串).
 /// - `state`: 当前应用状态.
 /// 
 /// # 返回值
 /// 返回 `WishResponse` 包含抽到的卡片信息, 若失败则返回错误信息.
 #[tauri::command]
-fn wish(banner_id: u64, state: State<AppState>) -> Result<WishResponse, String> {
-    let banner_id = BannerId(banner_id);
+fn wish(banner_id: GlobalId, state: State<AppState>) -> Result<WishResponse, String> {
     state.wish(banner_id)
         .map(WishResponse::new)
         .map_err(|e| log_command_err("wish", e))
@@ -73,14 +68,13 @@ fn wish(banner_id: u64, state: State<AppState>) -> Result<WishResponse, String> 
 /// 执行十连抽卡 (后端批量, 保证顺序与状态一致性)
 /// 
 /// # 参数
-/// - `banner_id`: 目标卡池的 Id (`u64`).
+/// - `banner_id`: 目标卡池的 `global_id` (Uuid 字符串).
 /// - `state`: 当前应用状态.
 /// 
 /// # 返回值
 /// 按抽取顺序返回 10 个 `WishResponse`; 任一次抽取失败则整体返回错误.
 #[tauri::command]
-fn wish_ten(banner_id: u64, state: State<AppState>) -> Result<Vec<WishResponse>, String> {
-    let banner_id = BannerId(banner_id);
+fn wish_ten(banner_id: GlobalId, state: State<AppState>) -> Result<Vec<WishResponse>, String> {
     let mut results = Vec::with_capacity(10);
     for _ in 0..10 {
         let result = state.wish(banner_id)
@@ -101,12 +95,11 @@ fn get_banners(state: State<AppState>) -> Result<Vec<BannerSummary>, String> {
 /// 获取指定卡池的详细信息.
 /// 
 /// # 参数
-/// - `banner_id`: 卡池 Id (`u64`).
+/// - `banner_id`: 卡池 `global_id` (Uuid 字符串).
 /// 
 /// 返回 `BannerInfo` 包含卡池名称、标签、关联卡组/逻辑名称及总抽数.
 #[tauri::command]
-fn get_banner_info(banner_id: u64, state: State<AppState>) -> Result<BannerInfo, String> {
-    let banner_id = BannerId(banner_id);
+fn get_banner_info(banner_id: GlobalId, state: State<AppState>) -> Result<BannerInfo, String> {
     state.banner_service.get_banner_info(banner_id)
         .map_err(|e| log_command_err("get_banner_info", e))
 }
@@ -173,7 +166,7 @@ fn list_cards_by_tags(tags: Vec<Tag>, state: State<AppState>) -> Result<Vec<Card
 /// 创建新的卡片.
 #[tauri::command]
 fn create_card(req: CardCreateRequest, state: State<AppState>) -> Result<CardSummary, String> {
-    let card = state.card_manager.create_card(req.content, req.tags)
+    let card = state.card_manager.create_card(req.content, req.tags, req.title)
         .map_err(|e| log_command_err("create_card", e))?;
     Ok(CardSummary::from(&card))
 }
@@ -181,20 +174,19 @@ fn create_card(req: CardCreateRequest, state: State<AppState>) -> Result<CardSum
 /// 更新卡片信息.
 #[tauri::command]
 fn update_card(req: CardUpdateRequest, state: State<AppState>) -> Result<CardSummary, String> {
-    let id = CardId(req.id);
     let card = state.card_manager.update_card(
-        id, 
-        req.new_content,
-        req.new_tags
+        req.global_id, 
+        req.content,
+        req.tags,
+        req.title,
     ).map_err(|e| log_command_err("update_card", e))?;
     Ok(CardSummary::from(&card))
 }
 
 /// 删除卡片.
 #[tauri::command]
-fn delete_card(id: u64, state: State<AppState>) -> Result<(), String> {
-    let id = CardId(id);
-    state.card_manager.delete_card(id).map_err(|e| log_command_err("delete_card", e))?;
+fn delete_card(global_id: GlobalId, state: State<AppState>) -> Result<(), String> {
+    state.card_manager.delete_card(global_id).map_err(|e| log_command_err("delete_card", e))?;
     Ok(())
 }
 
@@ -202,8 +194,8 @@ fn delete_card(id: u64, state: State<AppState>) -> Result<(), String> {
 /// 
 /// 用于删除卡片前在前端提示可能受影响的卡组.
 #[tauri::command]
-fn get_card_referencing_decks(id: u64, state: State<AppState>) -> Result<Vec<DeckSummary>, String> {
-    let decks = state.card_manager.referencing_decks(CardId(id));
+fn get_card_referencing_decks(global_id: GlobalId, state: State<AppState>) -> Result<Vec<DeckSummary>, String> {
+    let decks = state.card_manager.referencing_decks(global_id);
     Ok(decks.iter().map(|deck| DeckSummary::from(deck.as_ref())).collect())
 }
 
@@ -231,11 +223,13 @@ fn create_deck(req: CreateDeckRequest, state: State<AppState>) -> Result<DeckSum
 
 
 /// 更新卡组.
+/// 
+/// 若目标卡组来自只读来源 (官方 / 拓展包), 该操作会分叉出一个本地副本,
+/// 引用它的卡池不会被自动切换.
 #[tauri::command]
 fn update_deck(req: UpdateDeckRequest, state: State<AppState>) -> Result<DeckSummary, String> {
-    let id = DeckId(req.id);
     let deck = state.deck_manager.update_deck(
-        id,
+        req.global_id,
         req.name,
         req.members,
         req.event_groups,
@@ -246,9 +240,8 @@ fn update_deck(req: UpdateDeckRequest, state: State<AppState>) -> Result<DeckSum
 
 /// 删除卡组.
 #[tauri::command]
-fn delete_deck(id: u64, state: State<AppState>) -> Result<(), String> {
-    let id = DeckId(id);
-    state.deck_manager.delete_deck(id).map_err(|e| log_command_err("delete_deck", e))?;
+fn delete_deck(global_id: GlobalId, state: State<AppState>) -> Result<(), String> {
+    state.deck_manager.delete_deck(global_id).map_err(|e| log_command_err("delete_deck", e))?;
     Ok(())
 }
 

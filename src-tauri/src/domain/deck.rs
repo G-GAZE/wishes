@@ -11,6 +11,25 @@ use crate::{
 };
 
 
+/// 某个卡组对指定卡片的显式引用情况.
+///
+/// 仅统计 `include_ids` / `exclude_ids` 这类显式声明, 不含标签规则的动态包含.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct CardRefs {
+    /// 通过 `include_ids` 显式包含.
+    pub included: bool,
+    /// 通过 `exclude_ids` 显式排除.
+    pub excluded: bool,
+}
+
+impl CardRefs {
+    /// 是否存在任一方向的显式引用.
+    pub fn is_any(&self) -> bool {
+        self.included || self.excluded
+    }
+}
+
+
 /// 声明卡组成员卡片的条件.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -40,6 +59,37 @@ pub enum MembershipCondition {
     ExcludeIds{ ids: HashSet<GlobalId> },
 
     // TODO[2026-08-19]: 当前的匹配规则主要是正向匹配, 未来加入标签反向排除规则, EventGroupCondition 同理
+}
+
+impl MembershipCondition {
+    /// 该条件显式引用 (包含) 的卡片 `global_id` 集合.
+    /// 
+    /// 用于分叉时的引用重定向与删除前的引用检查
+    pub fn explicit_card_refs(&self) -> Option<&HashSet<GlobalId>> {
+        match self {
+            MembershipCondition::IncludeIds { ids } => Some(ids),
+            MembershipCondition::ExcludeIds { ids } => Some(ids),
+            _ => None,
+        }
+    }
+
+    /// 把 `include_ids` / `exclude_ids` 中指向 `from` 的引用替换为 `to`.
+    /// 
+    /// 返回是否发生了替换 (用于统计分叉时重定向了多少处引用).
+    pub fn redirect_card_refs(&mut self, from: GlobalId, to: GlobalId) -> bool {
+        let ids = match self {
+            MembershipCondition::IncludeIds { ids } => ids,
+            MembershipCondition::ExcludeIds { ids } => ids,
+            _ => return false,
+        };
+
+        if ids.remove(&from) {
+            ids.insert(to);
+            true
+        } else {
+            false
+        }
+    }
 }
 
 /// 卡组成员规则, 每个条件顺序应用.
@@ -114,6 +164,13 @@ impl Membership {
 
         result
     }
+
+    pub fn redirect_card_refs(&mut self, from: GlobalId, to: GlobalId) -> usize {
+        self.conditions
+            .iter_mut()
+            .map(|cond| usize::from(cond.redirect_card_refs(from, to)))
+            .sum()
+    }
 }
 
 
@@ -164,6 +221,24 @@ pub struct EventGroup {
     /// 按顺序应用的条件列表.
     #[serde(default)]
     pub conditions: Vec<EventGroupCondition>
+}
+
+impl EventGroupCondition {
+    /// 把 `include_ids` / `exclude_ids` 中指向 `from` 的引用替换为 `to`.
+    pub fn redirect_card_refs(&mut self, from: GlobalId, to: GlobalId) -> bool {
+        let ids = match self {
+            EventGroupCondition::IncludeIds { ids } => ids,
+            EventGroupCondition::ExcludeIds { ids } => ids,
+            _ => return false,
+        };
+
+        if ids.remove(&from) {
+            ids.insert(to);
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl Default for EventGroup {
@@ -236,6 +311,17 @@ impl EventGroup {
         }
 
         result
+    }
+
+    /// 把活动组规则中指向 `from` 的卡片引用重写为 `to`.
+    /// 
+    /// # 返回
+    /// 被重写的引用数量.
+    pub fn redirect_card_refs(&mut self, from: GlobalId, to: GlobalId) -> usize {
+        self.conditions
+            .iter_mut()
+            .map(|cond| usize::from(cond.redirect_card_refs(from, to)))
+            .sum()
     }
 }
 
@@ -321,6 +407,46 @@ impl Deck {
         }
 
         cards.into_iter().collect()
+    }
+
+   /// 把本卡组中所有显式卡片引用 (`include_ids` / `exclude_ids`) 从 `from` 重写为 `to`.
+    /// 
+    /// Card 被分叉时使用. 返回被重写的引用数量.
+    pub fn redirect_card_refs(&mut self, from: GlobalId, to: GlobalId) -> usize {
+        let mut count = self.members.redirect_card_refs(from, to);
+
+        for group in self.event_groups.values_mut() {
+            count += group.redirect_card_refs(from, to);
+        }
+
+        count
+    }
+
+    /// 该卡组是否显式引用指定卡片, 区分 include / exclude.
+    ///
+    /// 覆盖 `members` 与所有 `event_groups` 中的 `include_ids` / `exclude_ids`.
+    pub fn card_refs(&self, card_id: GlobalId) -> CardRefs {
+        let mut refs = CardRefs::default();
+
+        for cond in &self.members.conditions {
+            match cond {
+                MembershipCondition::IncludeIds { ids } if ids.contains(&card_id) => refs.included = true,
+                MembershipCondition::ExcludeIds { ids } if ids.contains(&card_id) => refs.excluded = true,
+                _ => {}
+            }
+        }
+
+        for group in self.event_groups.values() {
+            for cond in &group.conditions {
+                match cond {
+                    EventGroupCondition::IncludeIds { ids } if ids.contains(&card_id) => refs.included = true,
+                    EventGroupCondition::ExcludeIds { ids } if ids.contains(&card_id) => refs.excluded = true,
+                    _ => {}
+                }
+            }
+        }
+
+        refs
     }
 }
 

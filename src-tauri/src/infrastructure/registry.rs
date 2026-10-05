@@ -254,7 +254,7 @@ impl CardRegistry {
         self.paths.insert(id, path);
     }
 
-    /// 删除指定 `global_id` 的卡片, **保留**路径记录.
+    /// 删除指定 `global_id` 的卡片解除其分叉关系, **保留**路径记录.
     /// 
     /// 返回被删除的卡片 (若存在).
     pub fn remove_keep_path(&self, id: GlobalId) -> Option<Arc<TaggedCard>> {
@@ -272,7 +272,7 @@ impl CardRegistry {
         Some(card)
     }
 
-    /// 删除指定 `global_id` 的卡片, 同时**清理**路径记录.
+    /// 删除指定 `global_id` 的卡片并解除其分叉关系, 同时**清理**路径记录.
     /// 
     /// 相当于先删除路径记录, 再调用 `remove_keep_path`.
     /// 
@@ -446,27 +446,9 @@ impl DeckRegistry {
     pub fn decks_referencing_card(&self, card_id: GlobalId) -> Vec<Arc<TaggedDeck>> {
         self.all_visible()
             .into_iter()
-            .filter(|deck| deck_explicitly_references_card(deck, card_id))
+            .filter(|deck| deck.card_refs(card_id).is_any())
             .collect()
     }
-}
-
-fn deck_explicitly_references_card(deck: &TaggedDeck, card_id: GlobalId) -> bool {
-    use crate::domain::deck::{EventGroupCondition, MembershipCondition};
-
-    let in_members = deck.members.conditions.iter().any(|cond| matches!(
-        cond,
-        MembershipCondition::IncludeIds { ids } if ids.contains(&card_id)
-    ));
-
-    // TODO[2026-10-02]: 这里没考虑 ExcludeIds 的显示声明.
-
-    in_members || deck.event_groups.values().any(|group| {
-        group.conditions.iter().any(|cond| matches!(
-            cond,
-            EventGroupCondition::IncludeIds { ids } if ids.contains(&card_id)
-        ))
-    })
 }
 
 /// 卡池注册器.

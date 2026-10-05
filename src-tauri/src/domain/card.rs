@@ -34,6 +34,25 @@ pub struct Card {
     pub assets: Option<CardAssets>,
 }
 
+impl Card {
+    /// 以默认来源 (`local`) 创建一个仅含单语言内容的卡片.
+    pub fn new(content: LocalizedString) -> Self {
+        Self {
+            global_id: GlobalId::new(),
+            origin: Origin::Local,
+            forked_from: None,
+            content,
+            title: None,
+            assets: None,
+        }
+    }
+    
+    /// 按给定语言解析卡片显示内容, 缺失时回退到默认语言或任意可用语言.
+    pub fn display_content(&self, locale: &str) -> Option<&str> {
+        self.content.get_or_default_locale(locale)
+    }
+}
+
 /// 卡片资产引用.
 /// 
 /// 所有字段都是**相对于所属来源 `assets/` 目录**的路径,
