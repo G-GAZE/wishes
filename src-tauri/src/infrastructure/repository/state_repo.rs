@@ -79,10 +79,9 @@ impl StateRepository {
 
         conn.execute(
             r#"
-                CREATE_TABLE_IF NOT EXISTS instance_states (
+                CREATE TABLE IF NOT EXISTS instance_states (
                     scope_key       TEXT NOT NULL,
                     user_id         INTEGER NOT NULL DEFAULT 0,
-
                     total_counter   INTEGER NOT NULL DEFAULT 0,
                     logic_state     TEXT,
                     PRIMARY KEY     (scope_key)
@@ -196,7 +195,7 @@ impl StateRepository {
             r#"
                 INSERT INTO instance_states (scope_key, user_id, total_counter, logic_state)
                 VALUES (?1, ?2, ?3, ?4)
-                ON CONFLICT(user_id, scope_key) DO UPDATE SET
+                ON CONFLICT(scope_key) DO UPDATE SET
                     user_id = excluded.user_id,
                     total_counter = excluded.total_counter,
                     logic_state = excluded.logic_state;
@@ -204,5 +203,84 @@ impl StateRepository {
             rusqlite::params![scope_key, user_id, total_counter_i64, logic_state_str]
         )?;
         Ok(())
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+    use uuid::Uuid;
+    use super::*;
+
+    fn temp_db_path(tag: &str) -> PathBuf {
+        std::env::temp_dir().join(format!("wishes-state-{}-{}.db", tag, Uuid::now_v7()))
+    }
+
+    #[test]
+    fn saves_and_loads_state_by_scope_key() {
+        let path = temp_db_path("roundtrip");
+        let repo = StateRepository::new(&path).unwrap();
+
+        let state = BannerRuntimeState {
+            total_counter: 42,
+            logic_state: serde_json::json!({ "counter_5": 3 }),
+        };
+
+        repo.save(UserId(0), "banner:abc", &state).unwrap();
+        let loaded = repo.load(UserId(0), "banner:abc").unwrap().unwrap();
+
+        assert_eq!(loaded.total_counter, 42);
+        assert_eq!(loaded.logic_state["counter_5"], 3);
+        assert!(repo.load(UserId(0), "banner:other").unwrap().is_none());
+
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn group_scope_shares_one_row() {
+        let path = temp_db_path("group");
+        let repo = StateRepository::new(&path).unwrap();
+        let key = "group:arknights-standard";
+
+        repo.save(UserId(0), key, &BannerRuntimeState { total_counter: 10, logic_state: JsonValue::Null }).unwrap();
+        repo.save(UserId(0), key, &BannerRuntimeState { total_counter: 11, logic_state: JsonValue::Null }).unwrap();
+
+        let loaded = repo.load(UserId(0), key).unwrap().unwrap();
+        assert_eq!(loaded.total_counter, 11, "同一作用域只应保留一份状态");
+
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn legacy_schema_is_rebuilt() {
+        let path = temp_db_path("legacy");
+        {
+            let conn = Connection::open(&path).unwrap();
+            // 旧表结构
+            conn.execute(
+                "CREATE TABLE instance_states (
+                    user_id INTEGER NOT NULL,
+                    banner_id INTEGER NOT NULL,
+                    total_counter INTEGER NOT NULL DEFAULT 0,
+                    logic_state Text,
+                    PRIMARY KEY (user_id, banner_id)
+                )",
+                [],
+            ).unwrap();
+            conn.execute(
+                "INSERT INTO instance_states (user_id, banner_id, total_counter) VALUES (0, 1, 77)",
+                [],
+            ).unwrap();
+        }
+
+        let repo = StateRepository::new(&path).unwrap();
+
+        // 旧表被重建, 旧数据不再存在, 但新结构可以正常写入
+        assert!(repo.load(UserId(0), "banner:1").unwrap().is_none());
+        repo.save(UserId(0), "banner:1", &BannerRuntimeState::default()).unwrap();
+        assert!(repo.load(UserId(0), "banner:1").unwrap().is_some());
+
+        std::fs::remove_file(&path).ok();
     }
 }

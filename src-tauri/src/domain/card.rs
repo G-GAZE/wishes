@@ -86,3 +86,46 @@ impl CardAssets {
 /// 带标签的卡片, 实际存储和传递的类型.
 /// 即 `Tagged<Card>`.
 pub type TaggedCard = Tagged<Card>;
+
+
+#[cfg(test)]
+mod tests {
+    use crate::domain::tag::Tag;
+
+use super::*;
+
+    #[test]
+    fn serializes_according_to_v2_layout() {
+        let card = Card::new(LocalizedString::from_pairs([("zh-CN", "胡桃"), ("en", "Hu Tao")]));
+        let mut card = Tagged::new(card);
+        card.origin = Origin::Official;
+        card.add_tag(Tag::new("game", "genshin"));
+
+        let value: serde_json::Value = serde_json::to_value(&card).unwrap();
+
+        assert!(value["global_id"].is_string());
+        assert_eq!(value["origin"], "official");
+        assert_eq!(value["content"]["zh-CN"], "胡桃");
+        assert_eq!(value["tags"][0]["namespace"], "game");
+        // 可选字段为空时不应出现
+        assert!(value.get("forked_from").is_none());
+        assert!(value.get("title").is_none());
+        assert!(value.get("assets").is_none());
+    }
+
+    #[test]
+    fn round_trips_and_carries_fork_lineage() {
+        let mut card = Card::new(LocalizedString::single("zh-CN", "胡桃"));
+        card.forked_from = Some(GlobalId::new());
+        card.assets = Some(CardAssets {
+            portrait: Some("cards/abc.png".into()),
+            ..Default::default()
+        });
+
+        let json = serde_json::to_string(&card).unwrap();
+        let parsed: Card = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(parsed.forked_from, card.forked_from);
+        assert_eq!(parsed.assets.unwrap().portrait.as_deref(), Some("cards/abc.png"));
+    }
+}

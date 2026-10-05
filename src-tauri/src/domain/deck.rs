@@ -468,3 +468,72 @@ impl DeckAssets {
 /// 带标签的卡组.
 /// 即 `Tagged<Deck>`.
 pub type TaggedDeck = Tagged<Deck>;
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn id() -> GlobalId {
+        GlobalId::new()
+    }
+
+    #[test]
+    fn redirect_card_refs_in_members_and_event_groups() {
+        let (a, b, c) = (id(), id(), id());
+
+        let mut deck = Deck::new(LocalizedString::single("zh-CN", "测试卡组"));
+        deck.members.conditions.push(MembershipCondition::IncludeIds {
+            ids: HashSet::from([a, b]),
+        });
+        deck.members.conditions.push(MembershipCondition::ExcludeIds {
+            ids: HashSet::from([c]),
+        });
+        deck.event_groups.insert(EventTag::up(), EventGroup {
+            conditions: vec![EventGroupCondition::IncludeIds {
+                ids: HashSet::from([a]),
+            }],
+        });
+
+        let new_a = id();
+        let rewritten = deck.redirect_card_refs(a, new_a);
+
+        assert_eq!(rewritten, 2, "members 与 up 组各应重写一次");
+        assert!(matches!(
+            &deck.members.conditions[0],
+            MembershipCondition::IncludeIds { ids } if ids.contains(&new_a) && !ids.contains(&a)
+        ));
+        assert!(matches!(
+            &deck.event_groups[&EventTag::up()].conditions[0],
+            EventGroupCondition::IncludeIds { ids } if ids.contains(&new_a)
+        ));
+        // 未引用的 id 不受影响
+        assert!(matches!(
+            &deck.members.conditions[1],
+            MembershipCondition::ExcludeIds { ids } if ids.contains(&c)
+        ));
+    }
+
+    #[test]
+    fn redirect_reports_zero_when_not_referenced() {
+        let mut deck = Deck::new(LocalizedString::single("zh-CN", "测试卡组"));
+        deck.members.conditions.push(MembershipCondition::TagAll {
+            tags: vec![Tag::new("game", "genshin")],
+        });
+
+        assert_eq!(deck.redirect_card_refs(id(), id()), 0);
+    }
+
+    #[test]
+    fn optional_fields_are_skipped_when_absent() {
+        let deck = Deck::new(LocalizedString::single("zh-CN", "测试卡组"));
+        let value: serde_json::Value = serde_json::to_value(&deck).unwrap();
+
+        assert_eq!(value["origin"], "local");
+        assert_eq!(value["name"]["zh-CN"], "测试卡组");
+        assert_eq!(value["members"]["conditions"].as_array().unwrap().len(), 0);
+        assert!(value.get("forked_from").is_none());
+        assert!(value.get("assets").is_none());
+        assert!(value.get("tags").is_none());
+    }
+}

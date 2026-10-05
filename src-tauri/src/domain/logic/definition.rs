@@ -100,3 +100,26 @@ impl LogicDefinition {
 /// 带标签的逻辑定义.
 /// 即 `Tagged<LogicDefinition>`
 pub type TaggedLogicDefinition = Tagged<LogicDefinition>;
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn serializes_according_to_v2_layout() {
+        let def = LogicDefinition::new(
+            LocalizedString::single("zh-CN", "原神角色 UP 池逻辑"),
+            LogicVariant::Hardcoded { executor_name: "genshin_character_up".into() },
+        );
+
+        let value: serde_json::Value = serde_json::to_value(&def).unwrap();
+
+        assert!(value["global_id"].is_string());
+        assert_eq!(value["origin"], "local");
+        assert_eq!(value["name"]["zh-CN"], "原神角色 UP 池逻辑");
+        assert_eq!(value["variant"]["variant"], "Hardcoded");
+        assert_eq!(value["variant"]["config"]["executor_name"], "genshin_character_up");
+        assert!(value.get("forked_from").is_none());
+    }
+}

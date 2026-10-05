@@ -163,3 +163,88 @@ impl DataPaths {
         Ok(())
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn builds_expected_layout() {
+        let paths = DataPaths::new("/data");
+
+        assert_eq!(paths.official(), PathBuf::from("/data/official"));
+        assert_eq!(paths.local(), PathBuf::from("/data/local"));
+        assert_eq!(paths.packs(), PathBuf::from("/data/packs"));
+        assert_eq!(paths.pack("genshin"), PathBuf::from("/data/packs/genshin"));
+        assert_eq!(
+            paths.pack_zip("genshin"),
+            PathBuf::from("/data/packs/genshin/pack.zip")
+        );
+    }
+
+    #[test]
+    fn object_dirs_are_per_origin() {
+        let paths = DataPaths::new("/data");
+
+        assert_eq!(
+            paths.objects(&Origin::Official, "cards"),
+            PathBuf::from("/data/official/cards")
+        );
+        assert_eq!(
+            paths.objects(&Origin::Local, "decks"),
+            PathBuf::from("/data/local/decks")
+        );
+        assert_eq!(
+            paths.objects(&Origin::Pack("p1".into()), "banners"),
+            PathBuf::from("/data/packs/p1/banners")
+        );
+    }
+
+    #[test]
+    fn resolves_asset_paths_relative_to_origin() {
+        let paths = DataPaths::new("/data");
+
+        assert_eq!(
+            paths.resolve_asset(&Origin::Official, "cards/abc.png"),
+            PathBuf::from("/data/official/assets/cards/abc.png")
+        );
+        assert_eq!(
+            paths.resolve_asset(&Origin::Pack("p1".into()), "decks/abc.png"),
+            PathBuf::from("/data/packs/p1/assets/decks/abc.png")
+        );
+    }
+
+    #[test]
+    fn ensure_layout_creates_all_required_directories() {
+        let root = std::env::temp_dir().join(format!("wishes-paths-{}", uuid::Uuid::now_v7()));
+        std::fs::create_dir_all(&root).unwrap();
+        crate::domain::version::DataVersion::current().save(&root).unwrap();
+
+        let paths = DataPaths::new(&root);
+        paths.ensure_layout().unwrap();
+
+        // 全新检出时 local/ 与 packs/ 可能缺失, ensure_layout 必须补齐, verify 才通过
+        assert!(paths.verify().is_ok(), "补齐布局后校验应通过: {:?}", paths.verify());
+
+        for object_dir in OBJECT_DIRS {
+            assert!(paths.official().join(object_dir).is_dir());
+            assert!(paths.local().join(object_dir).is_dir());
+            assert!(paths.official().join(ASSETS_DIR).join(object_dir).is_dir());
+            assert!(paths.local().join(ASSETS_DIR).join(object_dir).is_dir());
+        }
+        assert!(paths.packs().is_dir());
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn verify_rejects_directory_without_version_file() {
+        let root = std::env::temp_dir().join(format!("wishes-paths-nover-{}", uuid::Uuid::now_v7()));
+        std::fs::create_dir_all(&root).unwrap();
+
+        assert!(DataPaths::new(&root).verify().is_err());
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+}

@@ -24,7 +24,7 @@ pub const DEFAULT_LOCALE: &str = "zh-CN";
 /// # 示例
 /// 
 /// ```
-/// # use wishes_lib::domain::localized::LocalizedString;
+/// # use wishes_lib::domain::localized_string::LocalizedString;
 /// # use std::collections::HashMap;
 /// let mut s = LocalizedString::new();
 /// s.insert("zh-CN", "胡桃");

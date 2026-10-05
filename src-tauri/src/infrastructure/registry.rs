@@ -836,3 +836,98 @@ impl LogicRegistry {
             .map(|guard| guard.value().possible_output_combinations())
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use crate::domain::{card::Card, deck::Deck, localized_string::LocalizedString, origin::Origin, tag::Tagged};
+
+use super::*;
+    
+    fn card_with_tag(content: &str) -> TaggedCard {
+        let card = Card::new(LocalizedString::single("zh-CN", content));
+        let mut card = Tagged::new(card);
+        card.add_tag(Tag::new("game", "genshin"));
+        card
+    }
+
+    #[test]
+    fn registry_keys_by_global_id() {
+        let registry = CardRegistry::new();
+        let card = card_with_tag("胡桃");
+        let id = card.global_id;
+
+        registry.insert(card);
+
+        assert!(registry.contains_including_shadowed(id));
+        assert_eq!(registry.count(), 1);
+        assert_eq!(registry.get_including_shadowed(id).unwrap().global_id, id);
+        assert_eq!(registry.tag_index.query_all(&[Tag::new("game", "genshin")]).len(), 1);
+    }
+
+    #[test]
+    fn shadowing_hides_source_but_keeps_it_resolvable() {
+        let registry = CardRegistry::new();
+        let official = card_with_tag("胡桃");
+        let source_id = official.global_id;
+        registry.insert(official);
+
+        let mut derived = card_with_tag("我的胡桃");
+        derived.origin = Origin::Local;
+        derived.forked_from = Some(source_id);
+        let derived_id = derived.global_id;
+        registry.insert(derived);
+
+        // 列表只看到派生版本, 但按 Id 仍能解析原对象
+        assert_eq!(registry.all_visible().len(), 1);
+        assert_eq!(registry.all_visible()[0].global_id, derived_id);
+        assert!(registry.get_including_shadowed(source_id).is_some(), "被遮蔽的对象仍须可解析");
+        assert!(!registry.is_visible(source_id));
+        assert_eq!(registry.derived_of(source_id), vec![derived_id]);
+    }
+
+    #[test]
+    fn deleting_derived_object_restores_source() {
+        let registry = CardRegistry::new();
+        let source = card_with_tag("胡桃");
+        let source_id = source.global_id;
+        registry.insert(source);
+
+        let mut derived = card_with_tag("胡桃(派生)");
+        derived.forked_from = Some(source_id);
+        let derived_id = derived.global_id;
+        registry.insert(derived);
+
+        registry.remove_keep_path(derived_id);
+
+        assert!(registry.is_visible(source_id), "删除派生对象后原对象应重新出现");
+        assert_eq!(registry.all_visible().len(), 1);
+        assert_eq!(registry.all_visible()[0].global_id, source_id);
+    }
+
+    #[test]
+    fn detects_decks_referencing_a_card() {
+        let cards = CardRegistry::new();
+        let card = card_with_tag("胡桃");
+        let card_id = card.global_id;
+        cards.insert(card);
+
+        let decks = DeckRegistry::new();
+        let mut deck = Deck::new(LocalizedString::single("zh-CN", "卡组"));
+        deck.members.conditions.push(
+            crate::domain::deck::MembershipCondition::IncludeIds {
+                ids: HashSet::from([card_id]),
+            },
+        );
+        let deck_id = deck.global_id;
+        let deck = Tagged::new(deck);
+        decks.insert(deck);
+
+        let found: Vec<GlobalId> = decks
+            .decks_referencing_card(card_id)
+            .iter()
+            .map(|d| d.global_id)
+            .collect();
+        assert_eq!(found, vec![deck_id]);
+    }
+}

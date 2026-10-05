@@ -154,3 +154,66 @@ impl BannerAssets {
         self.background.is_none() && self.icon.is_none() && self.carousel_cards.is_empty()
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn banner_with_scope(scope: &str) -> Banner {
+        let mut banner = Banner::new(
+            LocalizedString::single("zh-CN", "赤团开时"),
+            GlobalId::new(),
+            GlobalId::new(),
+        );
+        banner.state_scope = scope.to_string();
+        banner
+    }
+
+    #[test]
+    fn state_scope_is_always_serialized_even_when_default() {
+        let banner = banner_with_scope(STATE_SCOPE_DEFAULT);
+        let value: serde_json::Value = serde_json::to_value(&banner).unwrap();
+
+        assert_eq!(value["state_scope"], "banner");
+    }
+
+    #[test]
+    fn state_scope_key_is_banner_uuid_by_default() {
+        let banner = banner_with_scope(STATE_SCOPE_DEFAULT);
+
+        assert_eq!(banner.state_scope_key(), format!("banner:{}", banner.global_id));
+        assert!(!banner.shares_state());
+    }
+
+    #[test]
+    fn state_scope_key_is_shared_for_group_scope() {
+        let a = banner_with_scope("group:arknights-standard");
+        let b = banner_with_scope("group:arknights-standard");
+
+        assert!(a.shares_state());
+        assert_eq!(a.state_scope_key(), "group:arknights-standard");
+        assert_eq!(a.state_scope_key(), b.state_scope_key(), "同组卡池必须共享状态键");
+        assert_ne!(a.global_id, b.global_id);
+    }
+
+    #[test]
+    fn default_state_scope_applies_when_field_missing() {
+        let json = format!(
+            r#"{{
+                "global_id": "{}",
+                "origin": "official",
+                "name": {{"zh-CN": "赤团开时"}},
+                "deck_id": "{}",
+                "logic_id": "{}"
+            }}"#,
+            GlobalId::new(),
+            GlobalId::new(),
+            GlobalId::new(),
+        );
+
+        let banner: Banner = serde_json::from_str(&json).unwrap();
+        assert_eq!(banner.state_scope, STATE_SCOPE_DEFAULT);
+        assert_eq!(banner.global_id.short().len(), 8);
+    }
+}
