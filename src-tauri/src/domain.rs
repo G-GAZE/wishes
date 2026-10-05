@@ -4,6 +4,9 @@
 
 pub mod ids;
 pub mod tag;
+pub mod localized_string;
+pub mod origin;
+pub mod version;
 pub mod card;
 pub mod deck;
 pub mod banner;

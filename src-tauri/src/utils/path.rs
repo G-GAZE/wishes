@@ -5,7 +5,10 @@
 
 use std::{fs, path::{Path, PathBuf}};
 use anyhow::{Context, Result};
+use serde::Serialize;
 use tauri::{AppHandle, Manager, path::BaseDirectory};
+
+use crate::utils::data_paths::DataPaths;
 
 /// 获取最终使用的数据目录, 若目标目录不存在则资源中复制默认内容到目标目录.
 /// 
@@ -143,14 +146,46 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<()> {
     Ok(())
 }
 
-/// 检查数据目录是否有效.
+/// 检查数据目录是否具备数据格式 v2 的最低要求.
 /// 
-/// 当前仅验证路径是否为目录.
+/// 复用 [`DataPaths::verify`]: 校验 `version.json` 存在且版本受支持,
+/// 并确认 `official/` 与 `local/` 子目录存在.
 pub fn check_data_dir(dir: &Path) -> bool {
-    if dir.is_dir() {
-        // TODO: 检查必要子目录是否存在
-        true
-    } else {
-        false
+    match DataPaths::new(dir).verify() {
+        Ok(()) => true,
+        Err(reason) => {
+            tracing::warn!(
+                data_dir = %dir.display(),
+                reason = %reason,
+                "数据目录校验未通过"
+            );
+            false
+        }
     }
+}
+
+
+/// 原子写入 JSON 文件.
+///
+/// 实现: 先序列化到同目录下的临时文件, 再 `rename` 覆盖目标路径.
+/// 目标路径已存在时会被原子替换.
+pub fn atomic_write_json<T>(path: &Path, value: &T, kind: &str) -> Result<()>
+where
+    T: Serialize,
+{
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("原子写入时创建目录失败 - dir: {:?}", parent))?;
+    }
+
+    let json_string = serde_json::to_string_pretty(value)
+        .with_context(|| format!("{} 转为 JSON 文本时失败", kind))?;
+
+    let temp_path = path.with_extension("tmp");
+    fs::write(&temp_path, json_string)
+        .with_context(|| format!("原子写入临时文件失败 - file: {:?}", temp_path))?;
+    fs::rename(&temp_path, path)
+        .with_context(|| format!("重命名临时文件失败 - from: {:?}, to: {:?}", temp_path, path))?;
+
+    Ok(())
 }
